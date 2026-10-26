@@ -14,16 +14,11 @@ namespace Bech32.Proofs
 
 open Bech32
 
-/-- `f^[n] x` is `f` applied `n` times to `x`. This is Mathlib's notation for
-    `Nat.iterate`; core Lean has no `Nat.iterate`, so here it stands for core's
-    `Nat.repeat`, which is the same function. -/
-scoped notation:max f "^[" n "]" => Nat.repeat f n
+theorem repeat_zero (f : Nat → Nat) (x : Nat) : Nat.repeat f 0 x = x := rfl
 
-theorem repeat_zero (f : Nat → Nat) (x : Nat) : f^[0] x = x := rfl
+theorem repeat_succ' (f : Nat → Nat) (n x : Nat) : Nat.repeat f (n + 1) x = f (Nat.repeat f n x) := rfl
 
-theorem repeat_succ' (f : Nat → Nat) (n x : Nat) : f^[n + 1] x = f (f^[n] x) := rfl
-
-theorem repeat_succ (f : Nat → Nat) (n x : Nat) : f^[n + 1] x = f^[n] (f x) := by
+theorem repeat_succ (f : Nat → Nat) (n x : Nat) : Nat.repeat f (n + 1) x = Nat.repeat f n (f x) := by
   induction n with
   | zero => rfl
   | succ n ih => rw [repeat_succ', ih, repeat_succ']
@@ -33,8 +28,8 @@ def T (c : Nat) : Nat := Bech32.polymodStep c 0
 
 /-! ### Xor as a commutative monoid -/
 
-local instance : Std.Associative (α := Nat) (· ^^^ ·) := ⟨Nat.xor_assoc⟩
-local instance : Std.Commutative (α := Nat) (· ^^^ ·) := ⟨Nat.xor_comm⟩
+theorem xor_left_comm' (a b c : Nat) : a ^^^ (b ^^^ c) = b ^^^ (a ^^^ c) := by
+  rw [← Nat.xor_assoc, Nat.xor_comm a b, Nat.xor_assoc]
 
 theorem xor_cancel_right (a b c : Nat) : (a ^^^ c) ^^^ (b ^^^ c) = a ^^^ b := by
   rw [Nat.xor_assoc, ← Nat.xor_assoc c, Nat.xor_comm c b, Nat.xor_assoc, Nat.xor_self,
@@ -96,7 +91,7 @@ theorem polymodStep_lt (c v : Nat) (hc : c < 2 ^ 30) (hv : v < 32) :
 set_option linter.unusedVariables false in
 theorem polymodStep_xor (c v : Nat) (hv : v < 32) : Bech32.polymodStep c v = T c ^^^ v := by
   rw [polymodStep_eq, T_eq]
-  ac_rfl
+  simp only [Nat.xor_assoc, Nat.xor_comm, xor_left_comm']
 
 theorem T_lt (c : Nat) (hc : c < 2 ^ 30) : T c < 2 ^ 30 :=
   polymodStep_lt c 0 hc (by decide)
@@ -104,7 +99,7 @@ theorem T_lt (c : Nat) (hc : c < 2 ^ 30) : T c < 2 ^ 30 :=
 theorem T_xor (a b : Nat) (ha : a < 2 ^ 30) (hb : b < 2 ^ 30) : T (a ^^^ b) = T a ^^^ T b := by
   rw [T_eq, T_eq, T_eq, Nat.and_xor_distrib_right, Nat.shiftLeft_xor_distrib,
     Nat.shiftRight_xor_distrib, G_xor_all _ (shiftRight_25_lt a ha) _ (shiftRight_25_lt b hb)]
-  ac_rfl
+  simp only [Nat.xor_assoc, Nat.xor_comm, xor_left_comm']
 
 theorem T_zero : T 0 = 0 := by decide
 
@@ -126,13 +121,13 @@ theorem foldl_lt (vs : List Nat) (h : ∀ v ∈ vs, v < 32) (c : Nat) (hc : c < 
 theorem polymod_lt (vs : List Nat) (h : ∀ v ∈ vs, v < 32) : Bech32.polymod vs < 2 ^ 30 :=
   foldl_lt vs h 1 (by decide)
 
-theorem T_iterate_lt (n c : Nat) (hc : c < 2 ^ 30) : T^[n] c < 2 ^ 30 := by
+theorem T_iterate_lt (n c : Nat) (hc : c < 2 ^ 30) : Nat.repeat T n c < 2 ^ 30 := by
   induction n with
   | zero => exact hc
   | succ n ih => rw [repeat_succ']; exact T_lt _ ih
 
 theorem T_iterate_xor (n a b : Nat) (ha : a < 2 ^ 30) (hb : b < 2 ^ 30) :
-    T^[n] (a ^^^ b) = T^[n] a ^^^ T^[n] b := by
+    Nat.repeat T n (a ^^^ b) = Nat.repeat T n a ^^^ Nat.repeat T n b := by
   induction n with
   | zero => rfl
   | succ n ih =>
@@ -143,7 +138,7 @@ theorem T_iterate_xor (n a b : Nat) (ha : a < 2 ^ 30) (hb : b < 2 ^ 30) :
     difference of the starting states. -/
 theorem foldl_xor (l : List Nat) (hl : ∀ v ∈ l, v < 32) (c₁ c₂ : Nat)
     (h₁ : c₁ < 2 ^ 30) (h₂ : c₂ < 2 ^ 30) :
-    l.foldl Bech32.polymodStep c₁ ^^^ l.foldl Bech32.polymodStep c₂ = T^[l.length] (c₁ ^^^ c₂) := by
+    l.foldl Bech32.polymodStep c₁ ^^^ l.foldl Bech32.polymodStep c₂ = Nat.repeat T l.length (c₁ ^^^ c₂) := by
   induction l generalizing c₁ c₂ with
   | nil => rfl
   | cons x xs ih =>
@@ -156,7 +151,7 @@ theorem foldl_xor (l : List Nat) (hl : ∀ v ∈ l, v < 32) (c₁ c₂ : Nat)
 /-- Changing one value changes the checksum by `T` applied, once per later value, to the difference. -/
 theorem polymod_subst (a b : List Nat) (x y : Nat)
     (ha : ∀ v ∈ a, v < 32) (hb : ∀ v ∈ b, v < 32) (hx : x < 32) (hy : y < 32) :
-    Bech32.polymod (a ++ x :: b) ^^^ Bech32.polymod (a ++ y :: b) = T^[b.length] (x ^^^ y) := by
+    Bech32.polymod (a ++ x :: b) ^^^ Bech32.polymod (a ++ y :: b) = Nat.repeat T b.length (x ^^^ y) := by
   have hp := polymod_lt a ha
   rw [polymod_append, polymod_append, List.foldl_cons, List.foldl_cons,
     foldl_xor b hb _ _ (polymodStep_lt _ x hp hx) (polymodStep_lt _ y hp hy),
@@ -165,13 +160,13 @@ theorem polymod_subst (a b : List Nat) (x y : Nat)
 
 /-! ### Single errors -/
 
-/-- `okFrom x n`: none of `x, T x, …, T^[n] x` is 0 or `1 ^^^ 0x2bc830a3`. -/
+/-- `okFrom x n`: none of `x, T x, …, Nat.repeat T n x` is 0 or `1 ^^^ 0x2bc830a3`. -/
 def okFrom (x : Nat) : Nat → Bool
   | 0 => x != 0 && x != 1 ^^^ 0x2bc830a3
   | n + 1 => (x != 0 && x != 1 ^^^ 0x2bc830a3) && okFrom (T x) n
 
 theorem okFrom_spec (n x : Nat) (h : okFrom x n = true) (m : Nat) (hm : m ≤ n) :
-    T^[m] x ≠ 0 ∧ T^[m] x ≠ 1 ^^^ 0x2bc830a3 := by
+    Nat.repeat T m x ≠ 0 ∧ Nat.repeat T m x ≠ 1 ^^^ 0x2bc830a3 := by
   induction n generalizing x m with
   | zero =>
     have : m = 0 := by omega
@@ -191,7 +186,7 @@ theorem okFrom_all : ∀ e, e < 32 → 0 < e → okFrom e 88 = true := by
 /-- A single error is never invisible, nor turns one variant's constant into the other's,
     for up to 88 later values. -/
 theorem single_error (e m : Nat) (he : 0 < e) (he' : e < 32) (hm : m ≤ 88) :
-    T^[m] e ≠ 0 ∧ T^[m] e ≠ 1 ^^^ 0x2bc830a3 :=
+    Nat.repeat T m e ≠ 0 ∧ Nat.repeat T m e ≠ 1 ^^^ 0x2bc830a3 :=
   okFrom_spec 88 e (okFrom_all e he' he) m hm
 
 /-! ### The six checksum values -/
@@ -216,9 +211,9 @@ theorem polymodStep_small (a v : Nat) (ha : a < 33554432) (hv : v < 32) :
   have : (2 : Nat) ^ 5 = 32 := rfl
   omega
 
-/-- Starting from a state `c`, the run over `l` is `T^[l.length] c` plus the run from 0. -/
+/-- Starting from a state `c`, the run over `l` is `Nat.repeat T l.length c` plus the run from 0. -/
 theorem foldl_split (l : List Nat) (hl : ∀ v ∈ l, v < 32) (c : Nat) (hc : c < 2 ^ 30) :
-    l.foldl Bech32.polymodStep c = T^[l.length] c ^^^ l.foldl Bech32.polymodStep 0 := by
+    l.foldl Bech32.polymodStep c = Nat.repeat T l.length c ^^^ l.foldl Bech32.polymodStep 0 := by
   have h := foldl_xor l hl c 0 hc (by decide)
   rw [Nat.xor_zero] at h
   rw [← h, Nat.xor_assoc, Nat.xor_self, Nat.xor_zero]
@@ -259,13 +254,13 @@ theorem const_lt (v : Bech32.Variant) : v.const < 2 ^ 30 := by
   cases v <;> decide
 
 theorem polymod_zeros (pre : List Nat) :
-    Bech32.polymod (pre ++ [0, 0, 0, 0, 0, 0]) = T^[6] (Bech32.polymod pre) := by
+    Bech32.polymod (pre ++ [0, 0, 0, 0, 0, 0]) = Nat.repeat T 6 (Bech32.polymod pre) := by
   rw [polymod_append]
   rfl
 
 theorem checksum_val (v : Bech32.Variant) (hrp : List Char) (vals : List Nat) :
     (Bech32.checksum v hrp vals).map Fin.val =
-      let t := T^[6] (Bech32.polymod (Bech32.hrpExpand hrp ++ vals)) ^^^ v.const
+      let t := Nat.repeat T 6 (Bech32.polymod (Bech32.hrpExpand hrp ++ vals)) ^^^ v.const
       [(t >>> 25) % 32, (t >>> 20) % 32, (t >>> 15) % 32, (t >>> 10) % 32,
         (t >>> 5) % 32, (t >>> 0) % 32] := by
   simp only [checksum, polymod_zeros, List.map_cons, List.map_nil, Fin.val_ofNat]
@@ -277,7 +272,7 @@ theorem checksum_iff (v : Bech32.Variant) (hrp : List Char) (vals : List Nat)
       Bech32.polymod (Bech32.hrpExpand hrp ++ vals ++ check) = v.const) ↔
     check = (Bech32.checksum v hrp vals).map Fin.val := by
   have hc := polymod_lt _ hpre
-  have ht : T^[6] (Bech32.polymod (Bech32.hrpExpand hrp ++ vals)) ^^^ v.const < 2 ^ 30 :=
+  have ht : Nat.repeat T 6 (Bech32.polymod (Bech32.hrpExpand hrp ++ vals)) ^^^ v.const < 2 ^ 30 :=
     Nat.xor_lt_two_pow (T_iterate_lt 6 _ hc) (const_lt v)
   rw [checksum_val, ← pack_iff _ ht]
   apply and_congr_right
