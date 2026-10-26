@@ -1,0 +1,16 @@
+name = "bech32"
+version = "0.1.0"
+defaultTargets = ["Bech32", "Spec", "Proofs", "bech32"]
+
+[[lean_lib]]
+name = "Bech32"
+
+[[lean_lib]]
+name = "Spec"
+
+[[lean_lib]]
+name = "Proofs"
+
+[[lean_exe]]
+name = "bech32"
+root = "Main"
