@@ -8,7 +8,7 @@ Bech32 and Bech32m write a short human-readable label and a list of 5-bit values
 - A single changed character in the data part is always caught, whichever variant either string is.
 - Inserting `q` before a final `p` leaves a Bech32 string valid, which is the weakness BIP 350 was written to fix, and always breaks a Bech32m string.
 
-It is tested against a model of the BIPs and five other implementations: sipa's reference code in Python and C, npm `bech32`, Go's `btcutil/bech32`, and Rust's `bech32`. The record is in `tests/TEST-RESULTS.md`: 1,012,996 inputs, 0 failures. It is a project of [Proven Commons](https://github.com/Proven-Commons/mission), built to the verified bar published there.
+It is tested against a model of the BIPs and five other implementations: sipa's reference code in Python and C, npm `bech32`, Go's `btcutil/bech32`, and Rust's `bech32`. The record is in `tests/TEST-RESULTS.md`: 1,016,772 inputs, 0 failures. It is a project of [Proven Commons](https://github.com/Proven-Commons/mission), built to the verified bar published there.
 
 Status: in progress. The specification has not yet been approved by a reviewer apart from its author, so this is not verified.
 
@@ -94,7 +94,7 @@ The test script builds the tool and the oracles, and runs these inputs:
 - random strings and encodings, from a recorded seed;
 - malformed requests and CR LF line endings.
 
-It then rewrites `tests/TEST-RESULTS.md`, which also counts the substitutions and insertions as checks of the proved claims. `tests/plant_bugs.py` plants ten bugs in a copy of the code, one at a time, and records in `tests/PLANTED-BUGS.md` how many failures the tests report for each. Every bug must be caught, and each of them also breaks a proof.
+It then rewrites `tests/TEST-RESULTS.md`, which also counts the substitutions and insertions as checks of the proved claims. `tests/plant_bugs.py` plants twelve bugs in a copy of the code, one at a time, and records in `tests/PLANTED-BUGS.md` how many failures the tests report for each. Every bug must be caught, and each of them also breaks a proof.
 
 ## Layout
 

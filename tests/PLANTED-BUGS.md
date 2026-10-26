@@ -5,15 +5,17 @@ Written by `tests/plant_bugs.py`. Each bug is a one-line change to `Bech32/Basic
 | Planted bug | Failures |
 |---|---|
 | none | 0 |
-| one generator constant is wrong | 26823 |
-| the checksum keeps 26 bits before the shift, not 25 | 6798 |
-| a string of 91 characters is allowed | 496 |
+| one generator constant is wrong | 26884 |
+| the checksum keeps 26 bits before the shift, not 25 | 6906 |
+| a string of 91 characters is allowed | 526 |
 | the HRP may be empty | 132 |
-| mixed case is allowed | 6108 |
-| the first 1 is taken as the separator | 1891 |
-| the Bech32m constant has two digits swapped | 13224 |
-| the HRP expansion leaves out the zero | 26823 |
-| the HRP is checksummed in upper case | 11312 |
-| two characters of the charset are swapped | 15146 |
+| mixed case is allowed | 6114 |
+| the first 1 is taken as the separator | 2041 |
+| the Bech32m constant has two digits swapped | 12978 |
+| the HRP expansion leaves out the zero | 26853 |
+| the HRP is checksummed in upper case | 11180 |
+| two characters of the charset are swapped | 15464 |
+| o is read as the digit 0 | 84 |
+| a data part of 5 characters is allowed | 114 |
 
-Bugs caught: 10 of 10
+Bugs caught: 12 of 12

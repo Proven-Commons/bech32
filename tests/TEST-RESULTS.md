@@ -11,18 +11,18 @@ Written by `tests/run_tests.py`. Rerun it to check these numbers.
 - Rust: bech32 0.11.1 (rust-bitcoin), checksum 32637268377fc7b10a8c6d51de3e7fba1ce5dd371a96e342b34e6078db558e7f, built with rustc 1.97.0 (2d8144b78 2026-07-07)
 - Oracles left out: none
 - Seed: 20261026
-- Inputs: 1012996
-- By kind: BIP vector decode 82, BIP vector encode 63, case flipped decode 29999, deleted decode 30000, edge decode 1810, edge encode 1732, grid decode 781, inserted decode 30000, q inserted, bech32 decode 1337, q inserted, bech32, 90 characters decode 1663, q inserted, bech32m decode 1349, q inserted, bech32m, 90 characters decode 1651, q inserted, random decode 967, random decode 36000, random encode 30000, small alphabet decode 15000, substituted, HRP decode 60264, substituted, data part decode 656611, substituted, other decode 63543, substituted, separator decode 5144, swapped decode 30000, wild encode encode 15000
+- Inputs: 1016772
+- By kind: BIP vector decode 82, BIP vector encode 63, case flipped decode 30000, deleted decode 30000, edge decode 6528, edge encode 1732, grid decode 781, inserted decode 30000, q inserted, bech32 decode 1334, q inserted, bech32, 90 characters decode 1666, q inserted, bech32m decode 1348, q inserted, bech32m, 90 characters decode 1652, q inserted, random decode 974, random decode 36000, random encode 30000, small alphabet decode 15000, substituted, HRP decode 60464, substituted, data part decode 655526, substituted, other decode 63438, substituted, separator decode 5184, swapped decode 30000, wild encode encode 15000
 - Answers that differ from the model: 0
-- Strings decoded: 966201, of which 21199 are valid Bech32, 19302 valid Bech32m, and 925700 not valid
-- Why the model refuses those: the checksum 778734, mixed case 77698, a character that is not a data character 43065, no separator 9248, a data part of fewer than 6 characters 7624, longer than 90 characters 6862, an HRP of no characters or more than 83 1391, an HRP character outside 33 to 126 1078
-- Encodings asked for: 46795, of which 36375 are written and 10420 refused: an upper case letter in the HRP 4255, an HRP character outside 33 to 126 3506, longer than 90 characters 1848, an empty HRP 811
-- BIP 173 and BIP 350 strings the model reads as the BIPs say: 82 of 82
-- Single substitutions in the data part of a valid string that still decode: 0 of 656611
-- Valid strings ending in p that stay valid with q inserted before the p: bech32: 1337 of 1337 that fit in 90 characters, 0 of 1663 of 90 characters before the insertion; bech32m: 0 of 1349 that fit in 90 characters, 0 of 1651 of 90 characters before the insertion
-- Agreement with each oracle over all inputs: sipa Python 1002576 of 1012996, sipa C 1012035 of 1012996, npm 1008135 of 1012996, Go 1002576 of 1012996, Rust 1007285 of 1012996
+- Strings decoded: 969977, of which 21069 are valid Bech32, 19502 valid Bech32m, and 929406 not valid
+- Why the model refuses those: the checksum 780359, a character that is not a data character 63312, mixed case 58085, no separator 9277, a data part of fewer than 6 characters 8921, longer than 90 characters 6844, an HRP of no characters or more than 83 1505, an HRP character outside 33 to 126 1103
+- Encodings asked for: 46795, of which 36383 are written and 10412 refused: an upper case letter in the HRP 4256, an HRP character outside 33 to 126 3497, longer than 90 characters 1853, an empty HRP 806
+- BIP 173 and BIP 350 test strings the model reads as expected, the segwit address lists as strings: 82 of 82
+- Single substitutions in the data part of a valid string that still decode: 0 of 655526
+- Valid strings ending in p that stay valid with q inserted before the p: bech32: 1334 of 1334 that fit in 90 characters, 0 of 1666 of 90 characters before the insertion; bech32m: 0 of 1348 that fit in 90 characters, 0 of 1652 of 90 characters before the insertion
+- Agreement with each oracle over all inputs: sipa Python 1006360 of 1016772, sipa C 1015818 of 1016772, npm 1011914 of 1016772, Go 1006360 of 1016772, Rust 1011051 of 1016772
 - Malformed requests answered `error`: 35 of 35
-- Requests ending in CR LF: every seventh, 144713
+- Requests ending in CR LF: every seventh, 145253
 - Last lines sent alone, with no LF or with CR LF, answered right: 3 of 3
 - Failures: 0
 
@@ -32,40 +32,40 @@ Each disagreement is counted under the reason the model confirms, with the first
 
 ### sipa Python
 
-- sipa Python writes an upper case HRP as it is, with its checksum, encoding: 3879; for example `encode bech32 'A' data ''`
-- sipa Python writes HRP characters outside 33 to 126, encoding: 3247; for example `encode bech32 ' ' data ''`
-- sipa Python has no 90-character limit, encoding: 1848; for example `encode bech32 'a' data 'qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq'`
-- sipa Python writes an empty HRP, encoding: 783; for example `encode bech32 '' data ''`
+- sipa Python writes an upper case HRP as it is, with its checksum, encoding: 3880; for example `encode bech32 'A' data ''`
+- sipa Python writes HRP characters outside 33 to 126, encoding: 3237; for example `encode bech32 ' ' data ''`
+- sipa Python has no 90-character limit, encoding: 1853; for example `encode bech32 'a' data 'qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq'`
+- sipa Python writes an empty HRP, encoding: 778; for example `encode bech32 '' data ''`
 - sipa Python has no 90-character limit; writes an upper case HRP as it is, with its checksum, encoding: 376; for example `encode bech32 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' data 'q'`
-- sipa Python has no 90-character limit; writes HRP characters outside 33 to 126, encoding: 259; for example `encode bech32 '\u212a' data 'nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn'`
+- sipa Python has no 90-character limit; writes HRP characters outside 33 to 126, encoding: 260; for example `encode bech32 '\u212a' data 'nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn'`
 - sipa Python writes an empty HRP; has no 90-character limit, encoding: 28; for example `encode bech32 '' data '555555555555555555555555555555555555555555555555555555555555555555555555555555555555'`
 
 ### sipa C
 
-- sipa C writes an empty HRP, encoding: 783; for example `encode bech32 '' data ''`
-- sipa C reads the HRP as a C string, which ends at the first NUL, encoding: 164; for example `encode bech32 '\x00' data ''`
+- sipa C writes an empty HRP, encoding: 778; for example `encode bech32 '' data ''`
+- sipa C reads the HRP as a C string, which ends at the first NUL, encoding: 162; for example `encode bech32 '\x00' data ''`
 - sipa C reads a C string, which ends at the first NUL, decoding: 14; for example `decode 'ab1qpzfg27ph\x00'`
 
 ### npm
 
-- npm lower-cases the HRP, encoding: 3879; for example `encode bech32 'A' data ''`
-- npm writes an empty HRP, encoding: 783; for example `encode bech32 '' data ''`
-- npm lower-cases the HRP with Unicode rules, which turn the Kelvin sign into k, encoding: 180; for example `encode bech32 '\u212a' data ''`
-- npm lower-cases with Unicode rules, so the Kelvin sign U+212A reads as k, decoding: 19; for example `decode '\u212a1\u212a\u212aS7FG6D'`
+- npm lower-cases the HRP, encoding: 3880; for example `encode bech32 'A' data ''`
+- npm writes an empty HRP, encoding: 778; for example `encode bech32 '' data ''`
+- npm lower-cases the HRP with Unicode rules, which turn the Kelvin sign into k, encoding: 179; for example `encode bech32 '\u212a' data ''`
+- npm lower-cases with Unicode rules, so the Kelvin sign U+212A reads as k, decoding: 21; for example `decode '\u212a1\u212a\u212aS7FG6D'`
 
 ### Go
 
-- Go lower-cases the HRP, encoding: 3879; for example `encode bech32 'A' data ''`
-- Go writes HRP characters outside 33 to 126, lower-cased with Unicode rules, with the checksum over their UTF-8 bytes, encoding: 3247; for example `encode bech32 ' ' data ''`
-- Go has no 90-character limit, encoding: 1848; for example `encode bech32 'a' data 'qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq'`
-- Go writes an empty HRP, encoding: 783; for example `encode bech32 '' data ''`
+- Go lower-cases the HRP, encoding: 3880; for example `encode bech32 'A' data ''`
+- Go writes HRP characters outside 33 to 126, lower-cased with Unicode rules, with the checksum over their UTF-8 bytes, encoding: 3237; for example `encode bech32 ' ' data ''`
+- Go has no 90-character limit, encoding: 1853; for example `encode bech32 'a' data 'qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq'`
+- Go writes an empty HRP, encoding: 778; for example `encode bech32 '' data ''`
 - Go has no 90-character limit; lower-cases the HRP, encoding: 376; for example `encode bech32 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' data 'q'`
-- Go has no 90-character limit; writes HRP characters outside 33 to 126, lower-cased with Unicode rules, with the checksum over their UTF-8 bytes, encoding: 259; for example `encode bech32 '\u212a' data 'nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn'`
+- Go has no 90-character limit; writes HRP characters outside 33 to 126, lower-cased with Unicode rules, with the checksum over their UTF-8 bytes, encoding: 260; for example `encode bech32 '\u212a' data 'nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn'`
 - Go writes an empty HRP; has no 90-character limit, encoding: 28; for example `encode bech32 '' data '555555555555555555555555555555555555555555555555555555555555555555555555555555555555'`
 
 ### Rust
 
 - Rust lower-cases the HRP, encoding: 2985; for example `encode bech32 'A' data ''`
-- Rust has no 90-character limit (its limit is the code length, 1023), decoding: 1770; for example `decode 'a1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqql0ccdy'`
+- Rust has no 90-character limit (its limit is the code length, 1023), decoding: 1781; for example `decode 'a1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqql0ccdy'`
 - Rust has no 90-character limit, encoding: 675; for example `encode bech32 'a' data 'qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq'`
-- Rust has no 90-character limit; lower-cases the HRP, encoding: 281; for example `encode bech32 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' data 'q'`
+- Rust has no 90-character limit; lower-cases the HRP, encoding: 280; for example `encode bech32 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' data 'q'`

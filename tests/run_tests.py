@@ -34,10 +34,10 @@ Main.lean). Its answers are checked two ways.
 
    An oracle that cannot be built or started is left out, and the
    record says so on its `- Oracles left out:` line. A disagreement is
-   allowed only for a known reason that the model confirms: the model,
-   on the input the oracle actually reads or with only the checks the
-   oracle makes, gives the oracle's answer. Each is counted under its
-   reason:
+   allowed only where the tool refuses and the oracle answers, for a
+   known reason that the model confirms: the model, on the input the
+   oracle actually reads or with only the checks the oracle makes,
+   gives the oracle's answer. Each is counted under its reason:
 
    - Rust decodes strings longer than 90 characters: its limit is the
      code length, 1023. The model without the limit agrees.
@@ -586,9 +586,13 @@ def encode_props(hrp, data):
     return props
 
 
-def difference_reason(oracle, kind, x, theirs):
+def difference_reason(oracle, kind, x, got, theirs):
     """The known reason the oracle's answer differs from the tool's,
-    confirmed by the model, or None."""
+    confirmed by the model, or None. Every reason is an oracle that
+    accepts or writes what BIP 173 refuses, so it can excuse only a
+    disagreement where the tool refused and the oracle answered."""
+    if got is not None or theirs is None:
+        return None
     if kind == "d":
         names = DECODE_REASONS.get(oracle, {})
         props = [names[p] for p in sorted(decode_props(x)) if p in names]
@@ -607,8 +611,14 @@ def difference_reason(oracle, kind, x, theirs):
 
 # BIP 173 and BIP 350, "Test vectors": each string with the variant it
 # is valid in as a string, or None. For the segwit address lists the
-# verdict is on the string, as `Spec.segwit_strings` gives it: most
-# invalid addresses are valid strings.
+# verdict is on the string, not the address: most invalid addresses are
+# valid strings, and their variant follows from the BIP's reason. An
+# address rejected for the wrong variant ("Bech32 instead of Bech32m")
+# is valid in the variant named. One rejected for anything but its
+# checksum, case or characters has a valid checksum: Bech32 in BIP 173,
+# and in BIP 350 Bech32 for witness version 0 and Bech32m after; the
+# empty `bc1gmk9yu` is Bech32.
+# `Spec.segwit_strings` proves the same for the strings it lists.
 BIP173_VALID = ["A12UEL5L", "a12uel5l",
                 "an83characterlonghumanreadablepartthatcontainsthenumber1andtheexcludedcharacter"
                 "sbio1tt5tgs",
@@ -721,6 +731,24 @@ def digits_only(variant, hrp, rng):
             return s
 
 
+def short_data(variant, prefix, d):
+    """A string whose data part has only `d` characters (fewer than 6)
+    and whose checksum still holds: the HRP is `prefix` and 6 - d more
+    characters from 96 to 126, whose low bits take the place of the
+    missing checksum characters. None if a character would be 127."""
+    k = 6 - d
+    codes = [ord(c) for c in prefix]
+    fixed = [x >> 5 for x in codes] + [3] * k + [0] + [x & 31 for x in codes]
+    pm = bech32_polymod(fixed + [0] * 6) ^ CONST[variant]
+    sym = [(pm >> 5 * (5 - i)) & 31 for i in range(6)]
+    if any(x == 31 for x in sym[:k]):
+        return None
+    hrp = prefix + "".join(chr(0x60 + x) for x in sym[:k])
+    s = hrp + "1" + "".join(CHARSET[x] for x in sym[k:])
+    assert bech32_polymod(bech32_hrp_expand([ord(c) for c in hrp]) + sym[k:]) == CONST[variant]
+    return s
+
+
 def edge_decodes():
     rng = random.Random(1)
     out = ["", "1", "11", "111", "a", "a1", "1a", "A1", "?1", "aa", "1qqqqqq", "a1qqqqq",
@@ -754,6 +782,24 @@ def edge_decodes():
                     hrp + "1", hrp + "1" + s[-5:]]
             s = raw_encode(v, hrp, [9])
             out += [s, s[:-1], s[:-2]]
+        # Data parts of 0 to 5 characters whose checksum holds, as in
+        # BIP 173's li1dgmt3: the low bits of the HRP's last characters
+        # stand in for the rest of the checksum.
+        for d in range(6):
+            for prefix in ("a", "li", "bc", "x?z", "1"):
+                s = short_data(v, prefix, d)
+                if s is not None:
+                    out += [s, s.upper()]
+        # Every printable character that is not a data character, in a
+        # data position of a valid string that holds each data
+        # character there, in both cases.
+        nondata = sorted({c.lower() for c in PRINTABLE} - set(CHARSET))
+        for val in range(32):
+            s = raw_encode(v, "ab", [val, val])
+            k = s.rfind("1") + 1
+            for x in nondata:
+                t = s[:k] + x + s[k + 1:]
+                out += [t, t.upper()]
         # Every printable ASCII character in the HRP, alone, inside, and
         # three times; with the checksum of that HRP, and of its lower
         # case form, in both cases.
@@ -882,7 +928,11 @@ def mutations(rng, s):
             c = c.upper() if up else c
             if c.lower() != s[i].lower():
                 yield ("substituted, data part", "d", s[:i] + c + s[i + 1:])
-        for c in rng.sample("1biBIO", 2) + rng.sample(SPECIAL, 1):
+        # Characters that are not data characters, in the string's case.
+        for c in rng.sample("1bio", 2):
+            c = c.upper() if up else c
+            yield ("substituted, other", "d", s[:i] + c + s[i + 1:])
+        for c in rng.sample(SPECIAL, 1):
             yield ("substituted, other", "d", s[:i] + c + s[i + 1:])
     elif i == sep:
         for c in rng.sample(PRINTABLE, 4):
@@ -1139,7 +1189,7 @@ def main():
             if theirs == got:
                 agree[o] += 1
                 continue
-            reason = difference_reason(o, kind, x, theirs)
+            reason = difference_reason(o, kind, x, got, theirs)
             if reason is None:
                 failures.append((f"{o}: {show(kind, x)}"[:200], repr(got)[:160],
                                  repr(theirs)[:160]))
@@ -1193,8 +1243,8 @@ def main():
         f"- Why the model refuses those: {counts('d')}",
         f"- Encodings asked for: {len(encodes)}, of which {written} are written and "
         f"{len(encodes) - written} refused: {counts('e')}",
-        f"- BIP 173 and BIP 350 strings the model reads as the BIPs say: {vectors_right} of "
-        f"{len(VECTORS)}",
+        f"- BIP 173 and BIP 350 test strings the model reads as expected, the segwit address "
+        f"lists as strings: {vectors_right} of {len(VECTORS)}",
         f"- Single substitutions in the data part of a valid string that still decode: "
         f"{subs_decoding} of {len(subs)}",
         "- Valid strings ending in p that stay valid with q inserted before the p: "
