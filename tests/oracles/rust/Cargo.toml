@@ -1,0 +1,12 @@
+[package]
+name = "bech32-oracle"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "The Rust oracle for tests/run_tests.py: the bech32 crate of rust-bitcoin, pinned in Cargo.lock."
+
+[dependencies]
+bech32 = "=0.11.1"
+
+[profile.release]
+opt-level = 2

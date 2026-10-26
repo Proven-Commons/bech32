@@ -1,0 +1,9 @@
+{
+  "name": "bech32-oracle",
+  "private": true,
+  "description": "The npm oracle for tests/run_tests.py: the bech32 package (bitcoinjs), pinned with its integrity hash in package-lock.json.",
+  "license": "MIT",
+  "dependencies": {
+    "bech32": "2.0.0"
+  }
+}
