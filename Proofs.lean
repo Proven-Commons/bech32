@@ -1,1 +1,3 @@
--- The proofs arrive in Proofs/.
+-- The proofs of the statements in `Spec.lean`.
+import Proofs.Checksum
+import Proofs.Decode
