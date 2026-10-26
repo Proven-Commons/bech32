@@ -27,4 +27,11 @@ code = ["Bech32.encode", "Bech32.decode"]
 [tests]
 results = "tests/TEST-RESULTS.md"
 command = "python3 tests/run_tests.py"
-files = ["tests/run_tests.py", "tests/plant_bugs.py"]
+files = ["tests/run_tests.py", "tests/plant_bugs.py",
+         "tests/oracles/sipa/segwit_addr.py", "tests/oracles/sipa/segwit_addr.c",
+         "tests/oracles/sipa/segwit_addr.h", "tests/oracles/sipa/wrapper.c",
+         "tests/oracles/node/oracle.js", "tests/oracles/node/package.json",
+         "tests/oracles/node/package-lock.json", "tests/oracles/go/main.go",
+         "tests/oracles/go/go.mod", "tests/oracles/go/go.sum",
+         "tests/oracles/rust/src/main.rs", "tests/oracles/rust/Cargo.toml",
+         "tests/oracles/rust/Cargo.lock"]

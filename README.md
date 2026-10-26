@@ -8,7 +8,7 @@ Bech32 and Bech32m write a short human-readable label and a list of 5-bit values
 - A single changed character in the data part is always caught, whichever variant either string is.
 - Inserting `q` before a final `p` leaves a Bech32 string valid, which is the weakness BIP 350 was written to fix, and always breaks a Bech32m string.
 
-It is tested against a model of the BIPs and five other implementations. `tests/TEST-RESULTS.md` has the record. It is a project of [Proven Commons](https://github.com/Proven-Commons/mission), built to the verified bar published there.
+It is tested against a model of the BIPs and five other implementations: sipa's reference code in Python and C, npm `bech32`, Go's `btcutil/bech32`, and Rust's `bech32`. The record is in `tests/TEST-RESULTS.md`: 1,012,996 inputs, 0 failures. It is a project of [Proven Commons](https://github.com/Proven-Commons/mission), built to the verified bar published there.
 
 Status: in progress. The specification has not yet been approved by a reviewer apart from its author, so this is not verified.
 
@@ -48,7 +48,17 @@ The command-line tool in `Main.lean` answers requests with these functions direc
 
 ## Where other implementations differ
 
-TESTS-PENDING
+The tests compare every answer with five other implementations and count each disagreement under its reason, confirmed against the model. On strings of at most 90 characters their decoders agree with this one, with two exceptions: npm's reading of the Kelvin sign and sipa C's reading of NUL, both below. Most differences are in what their encoders let through.
+
+- **npm `bech32` 2.0.0 accepts a character outside ASCII.** It lower-cases with Unicode rules before it checks a string, so the Kelvin sign U+212A reads as `k`. It decodes `K1KKS7FG6D`, written with Kelvin signs, to the same prefix and data as `k1kks7fg6d`, and encodes the HRP `K` (Kelvin) as `k18duse0`. BIP 173 allows only characters 33 to 126, and this library rejects both.
+- **No 90-character limit.** Rust's `bech32` 0.11.1 decodes and encodes strings up to the code length, 1023 characters. Go's `btcutil/bech32` and sipa's Python reference encode past 90 characters.
+- **Encoders that check less than BIP 173 asks:**
+  - an empty HRP is written by sipa's Python and C references, npm and Go, which gives `10a06t8`, a string BIP 173 lists as invalid;
+  - an upper case HRP is written as it is by sipa's Python reference, which gives strings such as `A1G7SGD8`, also listed as invalid, and is lower-cased by npm, Go and Rust;
+  - HRP characters outside 33 to 126 are written by sipa's Python reference and Go; Go also lower-cases them with Unicode rules and checksums their UTF-8 bytes.
+
+  This library refuses all of these: `Spec.encode_isSome` says exactly what it writes.
+- **C strings.** sipa's C reference reads its input up to the first NUL.
 
 ## What you must trust
 
@@ -64,7 +74,27 @@ This project has no dependencies beyond Lean itself.
 
 ## Re-check it
 
-TESTS-PENDING
+Needs Linux, [elan](https://github.com/leanprover/elan), bubblewrap (`apt install bubblewrap`), Python 3 and a C compiler. The oracles also need Node and npm, Go, and Rust's cargo; the test script leaves out any it cannot build, and the record names them.
+
+```
+lake build
+lake comparator --paranoid
+python3 tests/run_tests.py
+python3 tests/plant_bugs.py
+```
+
+`lake comparator --paranoid` builds the statements and the proofs in a sandbox. It checks that each theorem in `Proofs/` proves exactly the statement in `Spec.lean`, using only the axioms `propext`, `Classical.choice`, and `Quot.sound`, and replays it through every kernel shipped with Lean.
+
+The test script builds the tool and the oracles, and runs these inputs:
+
+- every string of BIP 173 and BIP 350, with their encodings;
+- edge cases at the length limits, every printable character in the HRP, characters outside the range, mixed case, and `1` inside the HRP;
+- every string of up to four characters over a small alphabet;
+- random valid strings of both variants, with substitutions in the HRP, the separator and the data part, insertions, deletions, swaps of neighbours, case flips, and `q` inserted before a final `p`;
+- random strings and encodings, from a recorded seed;
+- malformed requests and CR LF line endings.
+
+It then rewrites `tests/TEST-RESULTS.md`, which also counts the substitutions and insertions as checks of the proved claims. `tests/plant_bugs.py` plants ten bugs in a copy of the code, one at a time, and records in `tests/PLANTED-BUGS.md` how many failures the tests report for each. Every bug must be caught, and each of them also breaks a proof.
 
 ## Layout
 
