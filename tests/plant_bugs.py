@@ -1,0 +1,115 @@
+#!/usr/bin/env python3
+"""Check that the differential tests catch planted bugs.
+
+Each bug is a one-line change to Bech32/Basic.lean. The script copies
+the project to a temporary folder, plants one bug at a time, runs
+tests/run_tests.py there with a small count, and records how many
+failures the tests report. Every planted bug must give at least one.
+The unchanged copy must give none. A bug that stops the executable from
+building is not a catch: the tests then report a build failure, and
+the bug counts as missed. The tests build only the executable, so a
+bug that breaks a proof still runs.
+
+    python3 tests/plant_bugs.py [--count N]
+
+The script writes tests/PLANTED-BUGS.md and exits non-zero if any bug
+goes uncaught.
+"""
+
+import argparse
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+RECORD = ROOT / "tests" / "PLANTED-BUGS.md"
+CODE = "Bech32/Basic.lean"
+
+# (what the bug does, the line as written, the line with the bug)
+BUGS = [
+    ("one generator constant is wrong",
+     "let chk := if b &&& 8 = 0 then chk else chk ^^^ 0x3d4233dd",
+     "let chk := if b &&& 8 = 0 then chk else chk ^^^ 0x3d4233dc"),
+    ("the checksum keeps 26 bits before the shift, not 25",
+     "let chk := ((chk &&& 0x1ffffff) <<< 5) ^^^ v",
+     "let chk := ((chk &&& 0x3ffffff) <<< 5) ^^^ v"),
+    ("a string of 91 characters is allowed",
+     "if 90 < cs.length || !cs.all isPrintable || (cs.any isUpper && cs.any isLower) then none",
+     "if 91 < cs.length || !cs.all isPrintable || (cs.any isUpper && cs.any isLower) then none"),
+    ("the HRP may be empty",
+     "if hrp.isEmpty || rest.length < 6 then none",
+     "if rest.length < 6 then none"),
+    ("mixed case is allowed",
+     "if 90 < cs.length || !cs.all isPrintable || (cs.any isUpper && cs.any isLower) then none",
+     "if 90 < cs.length || !cs.all isPrintable then none"),
+    ("the first 1 is taken as the separator",
+     "match cs.reverse.idxOf? '1' with",
+     "match (cs.idxOf? '1').map (cs.length - 1 - ·) with"),
+    ("the Bech32m constant has two digits swapped",
+     "| .bech32m => 0x2bc830a3",
+     "| .bech32m => 0x2bc803a3"),
+    ("the HRP expansion leaves out the zero",
+     "hrp.map (fun c => c.toNat >>> 5) ++ [0] ++ hrp.map (fun c => c.toNat &&& 31)",
+     "hrp.map (fun c => c.toNat >>> 5) ++ hrp.map (fun c => c.toNat &&& 31)"),
+    ("the HRP is checksummed in upper case",
+     "match variantOf hrp (data.map (·.val)) with",
+     "match variantOf (hrp.map Char.toUpper) (data.map (·.val)) with"),
+    ("two characters of the charset are swapped",
+     'def charset : List Char := "qpzry9x8gf2tvdw0s3jn54khce6mua7l".toList',
+     'def charset : List Char := "qpzry98xgf2tvdw0s3jn54khce6mua7l".toList'),
+]
+
+
+def failures(copy, count):
+    run = subprocess.run([sys.executable, "tests/run_tests.py", "--count", str(count)],
+                         cwd=copy, capture_output=True, text=True)
+    text = (copy / "tests" / "TEST-RESULTS.md").read_text(encoding="utf-8")
+    m = re.search(r"^- Failures: (\d+)(.*)$", text, re.M)
+    if m is None or "build" in m.group(2):
+        return None, run.stdout + run.stderr  # the bug did not build: not a catch
+    return int(m.group(1)), None
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--count", type=int, default=1000)
+    args = ap.parse_args()
+    rows, missed = [], 0
+    with tempfile.TemporaryDirectory() as tmp:
+        copy = Path(tmp) / "bech32"
+        shutil.copytree(ROOT, copy, symlinks=True,
+                        ignore=shutil.ignore_patterns("PLANTED-BUGS.md", "__pycache__"))
+        code = copy / CODE
+        original = code.read_text(encoding="utf-8")
+        n, err = failures(copy, args.count)
+        rows.append(("none", n))
+        if n != 0:
+            missed += 1
+        print(f"none: {n} failures" + (" (did not build)" if err else ""))
+        for what, line, bug in BUGS:
+            if original.count(line) != 1:
+                sys.exit(f"{CODE} no longer holds, once, the line for {what!r}: {line}")
+            code.write_text(original.replace(line, bug), encoding="utf-8")
+            n, err = failures(copy, args.count)
+            code.write_text(original, encoding="utf-8")
+            rows.append((what, n))
+            if not n:
+                missed += 1
+            print(f"{what}: {n} failures" + (" (did not build)" if err else ""))
+    lines = ["# Planted bugs", "",
+             "Written by `tests/plant_bugs.py`. Each bug is a one-line change to "
+             f"`{CODE}`, tested with `tests/run_tests.py --count {args.count}`. "
+             "Every bug must give failures, and the unchanged code none. A bug that does not "
+             "build counts as missed.", "",
+             "| Planted bug | Failures |", "|---|---|"]
+    lines += [f"| {what} | {'did not build' if n is None else n} |" for what, n in rows]
+    lines += ["", f"Bugs caught: {sum(1 for what, n in rows[1:] if n)} of {len(BUGS)}", ""]
+    RECORD.write_text("\n".join(lines), encoding="utf-8")
+    return 1 if missed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
