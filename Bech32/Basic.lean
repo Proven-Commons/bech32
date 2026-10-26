@@ -7,18 +7,13 @@
   the checksum must give: 1 for Bech32, `0x2bc830a3` for Bech32m.
 
   `encode` writes a string, and `decode` reads one back. The statements
-  about them are in `Spec.lean`.
+  about them are in `Spec.lean`. The type of the two variants is in
+  `Bech32/Variant.lean`, which is part of the specification.
 -/
 
-namespace Bech32
+import Bech32.Variant
 
-/-- The two checksum variants. -/
-inductive Variant where
-  /-- BIP 173. -/
-  | bech32
-  /-- BIP 350. -/
-  | bech32m
-  deriving DecidableEq, Repr
+namespace Bech32
 
 /-- The constant the checksum of each variant gives. -/
 def Variant.const : Variant → Nat

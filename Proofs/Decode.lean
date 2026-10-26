@@ -10,6 +10,7 @@
   (`encode_isSome'`), writing no upper case letter (`encode_lower'`).
 -/
 
+import Bech32
 import Spec.Defs
 
 namespace Bech32.Proofs

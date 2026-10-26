@@ -91,7 +91,7 @@ theorem polymodStep_lt (c v : Nat) (hc : c < 2 ^ 30) (hv : v < 32) :
 set_option linter.unusedVariables false in
 theorem polymodStep_xor (c v : Nat) (hv : v < 32) : Bech32.polymodStep c v = T c ^^^ v := by
   rw [polymodStep_eq, T_eq]
-  simp only [Nat.xor_assoc, Nat.xor_comm, xor_left_comm']
+  simp only [Nat.xor_assoc, Nat.xor_comm]
 
 theorem T_lt (c : Nat) (hc : c < 2 ^ 30) : T c < 2 ^ 30 :=
   polymodStep_lt c 0 hc (by decide)
@@ -99,7 +99,7 @@ theorem T_lt (c : Nat) (hc : c < 2 ^ 30) : T c < 2 ^ 30 :=
 theorem T_xor (a b : Nat) (ha : a < 2 ^ 30) (hb : b < 2 ^ 30) : T (a ^^^ b) = T a ^^^ T b := by
   rw [T_eq, T_eq, T_eq, Nat.and_xor_distrib_right, Nat.shiftLeft_xor_distrib,
     Nat.shiftRight_xor_distrib, G_xor_all _ (shiftRight_25_lt a ha) _ (shiftRight_25_lt b hb)]
-  simp only [Nat.xor_assoc, Nat.xor_comm, xor_left_comm']
+  simp only [Nat.xor_assoc, xor_left_comm']
 
 theorem T_zero : T 0 = 0 := by decide
 

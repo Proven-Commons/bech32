@@ -4,8 +4,9 @@
   and BIP 350 (https://github.com/bitcoin/bips/blob/master/bip-0350.mediawiki).
 
   This file is part of the specification: a reviewer approves it with
-  `Spec.lean`. It shares nothing with the code in `Bech32/` but the
-  type `Bech32.Variant`, which names the two variants.
+  `Spec.lean`. It shares nothing with the code in `Bech32/`: it imports
+  only `Bech32/Variant.lean`, the type that names the two variants,
+  which is part of the specification too.
 
   BIP 173 makes its Python code for the checksum normative ("Valid
   strings MUST pass the criteria for validity specified by the Python3
@@ -13,7 +14,7 @@
   line for line.
 -/
 
-import Bech32
+import Bech32.Variant
 
 namespace Spec
 

@@ -99,6 +99,7 @@ It then rewrites `tests/TEST-RESULTS.md`, which also counts the substitutions an
 ## Layout
 
 - `Bech32/Basic.lean`: the code under proof.
+- `Bech32/Variant.lean`: the type of the two variants. It is part of the specification, since the statements use it.
 - `Spec.lean`: the statements, with `sorry` for proofs. A reviewer approves this file.
 - `Spec/Defs.lean`: the definitions the statements use, written from BIP 173 and BIP 350.
 - `Proofs.lean` and `Proofs/`: the proofs, under the same names.
