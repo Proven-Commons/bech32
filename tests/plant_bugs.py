@@ -3,12 +3,15 @@
 
 Each bug is a one-line change to Bech32/Basic.lean. The script copies
 the project to a temporary folder, plants one bug at a time, runs
-tests/run_tests.py there with a small count, and records how many
-failures the tests report. Every planted bug must give at least one.
-The unchanged copy must give none. A bug that stops the executable from
-building is not a catch: the tests then report a build failure, and
-the bug counts as missed. The tests build only the executable, so a
-bug that breaks a proof still runs.
+tests/run_tests.py there with a small count and without the oracles,
+and records how many failures the tests report. So every failure
+counted is the tool disagreeing with the model of the BIPs, or with a
+BIP vector; an oracle that crashes or times out cannot pass for a
+catch. Every planted bug must give at least one failure. The unchanged
+copy must give none. A bug that stops the executable from building is
+not a catch: the tests then give up, and the bug counts as missed, as
+does any run that gives up or dies. The tests build only the
+executable, so a bug that breaks a proof still runs.
 
     python3 tests/plant_bugs.py [--count N]
 
@@ -66,6 +69,15 @@ BUGS = [
     ("a data part of 5 characters is allowed",
      "if hrp.isEmpty || rest.length < 6 then none",
      "if hrp.isEmpty || rest.length < 5 then none"),
+    ("the encoder writes 91 characters",
+     "if h.isEmpty || !h.all (fun c => isPrintable c && !isUpper c) || 90 < h.length + 7 + data.length then",
+     "if h.isEmpty || !h.all (fun c => isPrintable c && !isUpper c) || 91 < h.length + 7 + data.length then"),
+    ("the encoder writes an upper case HRP",
+     "if h.isEmpty || !h.all (fun c => isPrintable c && !isUpper c) || 90 < h.length + 7 + data.length then",
+     "if h.isEmpty || !h.all (fun c => isPrintable c) || 90 < h.length + 7 + data.length then"),
+    ("the encoder writes an empty HRP",
+     "if h.isEmpty || !h.all (fun c => isPrintable c && !isUpper c) || 90 < h.length + 7 + data.length then",
+     "if !h.all (fun c => isPrintable c && !isUpper c) || 90 < h.length + 7 + data.length then"),
 ]
 
 
@@ -76,14 +88,15 @@ def failures(copy, count):
     removed first rather than read again."""
     record = copy / "tests" / "TEST-RESULTS.md"
     record.unlink(missing_ok=True)
-    run = subprocess.run([sys.executable, "tests/run_tests.py", "--count", str(count)],
+    run = subprocess.run([sys.executable, "tests/run_tests.py", "--count", str(count),
+                          "--no-oracles"],
                          cwd=copy, capture_output=True, text=True)
     out = run.stdout + run.stderr
     if not record.exists():
         return None, f"no record written, exit status {run.returncode}\n{out}"
     m = re.search(r"^- Failures: (\d+)(.*)$", record.read_text(encoding="utf-8"), re.M)
-    if m is None or "build" in m.group(2):
-        return None, out  # the bug did not build: not a catch
+    if m is None or m.group(2).strip():
+        return None, out  # the run gave up, for example the bug did not build: not a catch
     n = int(m.group(1))
     if run.returncode != (1 if n else 0):
         return None, f"{n} failures but exit status {run.returncode}\n{out}"
@@ -118,9 +131,10 @@ def main():
             print(f"{what}: {n} failures" + (" (did not build or did not finish)" if err else ""))
     lines = ["# Planted bugs", "",
              "Written by `tests/plant_bugs.py`. Each bug is a one-line change to "
-             f"`{CODE}`, tested with `tests/run_tests.py --count {args.count}`. "
+             f"`{CODE}`, tested with `tests/run_tests.py --count {args.count} --no-oracles`, "
+             "so each failure is the tool disagreeing with the model or a BIP vector. "
              "Every bug must give failures, and the unchanged code none. A bug that does not "
-             "build counts as missed.", "",
+             "build, or a run that gives up, counts as missed.", "",
              "| Planted bug | Failures |", "|---|---|"]
     lines += [f"| {what} | {'did not build or did not finish' if n is None else n} |" for what, n in rows]
     lines += ["", f"Bugs caught: {sum(1 for what, n in rows[1:] if n)} of {len(BUGS)}", ""]

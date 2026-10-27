@@ -5,8 +5,8 @@ Bech32 and Bech32m write a short human-readable label and a list of 5-bit values
 - The decoder accepts exactly the strings BIP 173 and BIP 350 allow, and reads each one in exactly one way.
 - Decoding an encoding gives back what was encoded, and every valid string is an encoding, up to upper case.
 - The encoder writes lower case only, as BIP 173 requires.
-- A single changed character in the data part is always caught, whichever variant either string is.
-- Inserting `q` before a final `p` leaves a Bech32 string valid, which is the weakness BIP 350 was written to fix, and always breaks a Bech32m string.
+- A data character changed to another data character is always caught, whichever variant either string is. A data character changed to `1` moves the separator, and both strings can then be valid; a proved example shows it.
+- Inserting `q` before a final `p` leaves a Bech32 string valid when it still fits in 90 characters, which is the weakness BIP 350 was written to fix, and always breaks a Bech32m string.
 
 It is tested against a model of the BIPs and five other implementations: sipa's reference code in Python and C, npm `bech32`, Go's `btcutil/bech32`, and Rust's `bech32`. The record is in `tests/TEST-RESULTS.md`: 1,016,772 inputs, 0 failures. It is a project of [Proven Commons](https://github.com/Proven-Commons/mission), built to the verified bar published there.
 
@@ -32,17 +32,18 @@ The statements are in `Spec.lean`, the definitions they use in `Spec/Defs.lean`,
 | Decoding an encoding gives back the variant, the human-readable part and the data. | `Spec.decode_encode` |
 | Every string `decode` accepts is what `encode` writes, in lower case. | `Spec.encode_decode` |
 | An encoding has no upper case letter. | `Spec.encode_lower` |
-| Two strings that, in lower case, differ in one character of the data part never both decode, under either variant. | `Spec.one_substitution` |
+| Two strings that, in lower case, differ in one character of the data part, where each holds a data character, never both decode, under either variant. | `Spec.one_substitution` |
+| A data character changed to `1` moves the separator, and both strings can be valid: two proved pairs, one under a single variant and one across the two. | `Spec.separator_substitution` |
 | Inserting `q` before a final `p` keeps a Bech32 string valid, if it still fits. | `Spec.insert_q_bech32` |
 | The same insertion never leaves a Bech32m string valid. | `Spec.insert_q_bech32m` |
-| Every test vector of BIP 173 and BIP 350, valid and invalid; the segwit address vectors, read as strings; and encodings at the limits. | `Spec.bip173_valid`, `Spec.bip173_invalid`, `Spec.bip350_valid`, `Spec.bip350_invalid`, `Spec.segwit_strings`, `Spec.encode_vectors` |
+| Every test vector of BIP 173 and BIP 350, valid and invalid; the segwit address vectors of both, read as strings; and encodings at the limits. | `Spec.bip173_valid`, `Spec.bip173_invalid`, `Spec.bip350_valid`, `Spec.bip350_invalid`, `Spec.segwit_strings`, `Spec.encode_vectors` |
 
 The command-line tool in `Main.lean` answers requests with these functions directly.
 
 ## What is not proved
 
 - **Segwit addresses.** The witness version, the program length, the conversion between bytes and 5-bit values and its padding, and which variant each witness version needs are a later slice. Most of the addresses BIP 350 lists as invalid are valid strings, and `Spec.segwit_strings` says which.
-- **Errors in more than one character.** BIP 173 says the checksum catches any error in at most 4 characters. Only the one-character case in the data part is proved here. An error in the human-readable part can change two checksum values at once, and `Spec.one_substitution` does not cover it.
+- **Errors in more than one character.** BIP 173 says the checksum catches any error in at most 4 characters, for strings of one variant. Only the one-character case in the data part, among data characters, is proved here, and nothing tests the rest. A decoder that accepts both variants, as this one does, can be fooled by fewer: BIP 350 notes that a valid Bech32 string and a valid Bech32m string can differ in only 3 characters. An error in the human-readable part can change two checksum values at once, and `Spec.one_substitution` does not cover it.
 - **Longer strings.** Some formats, such as Lightning invoices, use Bech32 past 90 characters. This library keeps the 90-character limit of BIP 173.
 - **Reading requests and printing answers in `Main.lean`.** The differential tests cover them.
 
@@ -54,7 +55,7 @@ The tests compare every answer with five other implementations and count each di
 - **No 90-character limit.** Rust's `bech32` 0.11.1 decodes and encodes strings up to the code length, 1023 characters. Go's `btcutil/bech32` and sipa's Python reference encode past 90 characters.
 - **Encoders that check less than BIP 173 asks:**
   - an empty HRP is written by sipa's Python and C references, npm and Go, which gives `10a06t8`, a string BIP 173 lists as invalid;
-  - an upper case HRP is written as it is by sipa's Python reference, which gives strings such as `A1G7SGD8`, also listed as invalid, and is lower-cased by npm, Go and Rust;
+  - an upper case HRP is written as it is by sipa's Python reference, with the data in lower case, which gives mixed-case strings such as `A1g7sgd8` (the checksum of `A1G7SGD8`, which BIP 173 lists as invalid), and is lower-cased by npm, Go and Rust;
   - HRP characters outside 33 to 126 are written by sipa's Python reference and Go; Go also lower-cases them with Unicode rules and checksums their UTF-8 bytes.
 
   This library refuses all of these: `Spec.encode_isSome` says exactly what it writes.
@@ -94,7 +95,7 @@ The test script builds the tool and the oracles, and runs these inputs:
 - random strings and encodings, from a recorded seed;
 - malformed requests and CR LF line endings.
 
-It then rewrites `tests/TEST-RESULTS.md`, which also counts the substitutions and insertions as checks of the proved claims. `tests/plant_bugs.py` plants twelve bugs in a copy of the code, one at a time, and records in `tests/PLANTED-BUGS.md` how many failures the tests report for each. Every bug must be caught, and each of them also breaks a proof.
+It then rewrites `tests/TEST-RESULTS.md`, which also counts the substitutions and insertions as checks of the proved claims. `tests/plant_bugs.py` plants fifteen bugs in a copy of the code, one at a time, and records in `tests/PLANTED-BUGS.md` how many failures the tests report for each, against the model alone, so that an oracle that crashes cannot pass for a catch. Every bug must be caught, and each of them also breaks a proof.
 
 ## Layout
 

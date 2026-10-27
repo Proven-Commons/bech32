@@ -87,11 +87,13 @@ Inputs come from a recorded seed, after fixed sets:
 
 Every seventh request ends in CR LF.
 
-    python3 tests/run_tests.py [--seed N] [--count N]
+    python3 tests/run_tests.py [--seed N] [--count N] [--no-oracles]
 
-`--count` is the number of random valid strings. The script builds the
-executable and the oracles first, writes tests/TEST-RESULTS.md, and
-exits non-zero if any check fails.
+`--count` is the number of random valid strings. `--no-oracles` leaves
+every oracle out and compares the tool with the model alone, as
+tests/plant_bugs.py does. The script builds the executable and the
+oracles first, writes tests/TEST-RESULTS.md, and exits non-zero if any
+check fails.
 """
 
 import argparse
@@ -1073,6 +1075,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--seed", type=int, default=20261026)
     ap.add_argument("--count", type=count_arg, default=30_000)
+    ap.add_argument("--no-oracles", action="store_true",
+                    help="compare with the model only, as tests/plant_bugs.py does")
     args = ap.parse_args()
 
     def give_up(why):
@@ -1092,6 +1096,9 @@ def main():
     failures = []
     oracles, left_out = [], []
     for name, setup in ORACLE_SETUPS:
+        if args.no_oracles:
+            left_out.append((name, "--no-oracles"))
+            continue
         try:
             oracles.append(setup())
         except Exception as e:  # any oracle that cannot start is left out, and recorded

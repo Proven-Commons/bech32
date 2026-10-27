@@ -42,7 +42,8 @@ Each property is a theorem in `Spec.lean`, under the name given.
 | Decoding an encoding gives back the variant, the HRP and the data. | `Spec.decode_encode` |
 | What `decode` accepts, `encode` writes back in lower case. | `Spec.encode_decode` |
 | An encoding has no upper case letter. | `Spec.encode_lower` |
-| Two strings that, in lower case, differ in one character of the data part never both decode, whichever variant each has. | `Spec.one_substitution` |
+| Two strings that, in lower case, differ in one character of the data part, where each holds a data character, never both decode, whichever variant each has. | `Spec.one_substitution` |
+| A data character changed to `1` moves the separator, and both strings can be valid. | `Spec.separator_substitution` |
 | Inserting `q` before a final `p` keeps a Bech32 string valid: the weakness BIP 350 fixes. | `Spec.insert_q_bech32` |
 | The same insertion never leaves a Bech32m string valid. | `Spec.insert_q_bech32m` |
 | The test vectors of BIP 173 and BIP 350, valid and invalid, and the segwit address vectors read as strings. | `Spec.bip173_valid`, `Spec.bip173_invalid`, `Spec.bip350_valid`, `Spec.bip350_invalid`, `Spec.segwit_strings` |
@@ -50,7 +51,7 @@ Each property is a theorem in `Spec.lean`, under the name given.
 
 `Spec.decode_iff` fixes `decode` on every string. `Spec.encode_decode` and `Spec.decode_encode` then fix `encode` on every input it accepts, and `Spec.encode_isSome` says which inputs those are.
 
-BIP 173 also says the checksum detects any error that affects at most 4 characters. This slice proves the one-character case for the data part, under both variants together. The rest is a property of the BCH code; it is tested, not proved.
+BIP 173 also says the checksum detects any error that affects at most 4 characters, among strings of one variant. This slice proves the one-character case for the data part, among data characters, under both variants together. The rest is neither proved nor tested here. A decoder that accepts both variants detects fewer errors: BIP 350 notes that a valid Bech32 string and a valid Bech32m string can differ in as few as 3 characters. A change to `1` moves the separator, and is not covered at all (`Spec.separator_substitution`).
 
 ## The command-line tool
 

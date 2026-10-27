@@ -59,16 +59,28 @@ theorem Spec.encode_lower (v : Variant) (hrp : String) (data : List (Fin 32)) (s
 
 /-! ## Errors the checksum catches -/
 
-/-- One changed character in the data part is always caught, whichever
-    variant either string has. Take two strings that, in lower case,
-    are the same but for one character after the separator, where they
-    hold two different data characters. At most one of them decodes. -/
+/-- A data character changed to another data character is always
+    caught, whichever variant either string has. Take two strings that,
+    in lower case, are the same but for one character after the
+    separator, where they hold two different data characters. At most
+    one of them decodes. A data character changed to `1` is not covered:
+    see `Spec.separator_substitution`. -/
 theorem Spec.one_substitution (s s' : String) (p q : List Char) (x y : Char)
     (hp : '1' ∈ p) (hq : '1' ∉ q)
     (hx : x ∈ Spec.charset) (hy : y ∈ Spec.charset) (hxy : x ≠ y)
     (hs : s.toList.map Spec.lower = p ++ x :: q)
     (hs' : s'.toList.map Spec.lower = p ++ y :: q) :
     Bech32.decode s = none ∨ Bech32.decode s' = none := sorry
+
+/-- What `Spec.one_substitution` leaves out. A data character changed
+    to `1` moves the separator, since the separator is the last `1`, and
+    both strings can then be valid: under one variant, as in the first
+    pair, or under both, as in the second. -/
+theorem Spec.separator_substitution :
+    (Bech32.decode "bc1et06sdxfhesf7").map (·.1) = some .bech32 ∧
+    Bech32.decode "bc1et06sd1fhesf7" = some (.bech32, "bc1et06sd", []) ∧
+    (Bech32.decode "bc1xd49x4cqqzp2cp6").map (·.1) = some .bech32 ∧
+    Bech32.decode "bc1xd49x41qqzp2cp6" = some (.bech32m, "bc1xd49x4", [0, 0]) := sorry
 
 /-- The weakness that BIP 350 fixes: inserting `q` before a final `p`
     keeps a Bech32 string valid, as long as it still fits in 90
@@ -172,8 +184,9 @@ theorem Spec.bip350_invalid :
     This slice checks the string layer only: most of the addresses
     those BIPs call invalid are valid strings, which a segwit decoder
     (a later slice) rejects for their witness version, program length,
-    padding or variant. The comment on each line gives BIP 350's
-    verdict on the address. -/
+    padding or variant. The comment on each line gives the BIP's
+    verdict on the address: BIP 350's, then the eight addresses only
+    BIP 173 lists. -/
 theorem Spec.segwit_strings :
     -- valid addresses
     (Bech32.decode "BC1QW508D6QEJXTDG4Y5R3ZARVARY0C5XW7KV8F3T4").map (·.1) = some .bech32 ∧
@@ -212,7 +225,22 @@ theorem Spec.segwit_strings :
     -- non-zero padding in 8-to-5 conversion
     (Bech32.decode "tb1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vpggkg4j").map (·.1) = some .bech32m ∧
     -- empty data section
-    Bech32.decode "bc1gmk9yu" = some (.bech32, "bc", []) := sorry
+    Bech32.decode "bc1gmk9yu" = some (.bech32, "bc", []) ∧
+    -- BIP 173 only: invalid human-readable part
+    (Bech32.decode "tc1qw508d6qejxtdg4y5r3zarvary0c5xw7kg3g4ty").map (·.1) = some .bech32 ∧
+    -- BIP 173 only: invalid checksum
+    Bech32.decode "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t5" = none ∧
+    -- BIP 173 only: invalid witness version
+    (Bech32.decode "BC13W508D6QEJXTDG4Y5R3ZARVARY0C5XW7KN40WF2").map (·.1) = some .bech32 ∧
+    -- BIP 173 only: invalid program length
+    (Bech32.decode "bc1rw5uspcuh").map (·.1) = some .bech32 ∧
+    (Bech32.decode "bc10w508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7kw5rljs90").map (·.1) = some .bech32 ∧
+    -- BIP 173 only: mixed case
+    Bech32.decode "tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sL5k7" = none ∧
+    -- BIP 173 only: zero padding of more than 4 bits
+    (Bech32.decode "bc1zw508d6qejxtdg4y5r3zarvaryvqyzf3du").map (·.1) = some .bech32 ∧
+    -- BIP 173 only: non-zero padding in 8-to-5 conversion
+    (Bech32.decode "tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3pjxtptv").map (·.1) = some .bech32 := sorry
 
 /-- Encodings: the BIP strings that are encodings, and the limits of
     `encode`. -/

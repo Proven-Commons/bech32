@@ -7,8 +7,9 @@ name = "bech32"
 status = "in-progress"
 page = "README.md"
 # GitHub handles of everyone who wrote the specification. It was drafted
-# by Claude, an AI agent, for the org, from the fdn-0 account.
-spec_authors = ["claude", "fdn-0"]
+# by Claude, an AI agent, for the org: agent fdn-claude, for the fdn-0
+# account, posting as zero-aska on GitHub.
+spec_authors = ["claude", "fdn-0", "zero-aska"]
 # The program people run. A change to it voids the approval.
 entry_points = ["Main.lean"]
 
