@@ -1,0 +1,11 @@
+{
+  "challenge_module": "Spec",
+  "solution_module": "Proofs",
+  "theorem_names": [
+    "Spec.decode_iff", "Spec.encode_isSome", "Spec.decode_encode", "Spec.encode_decode",
+    "Spec.encode_lower", "Spec.one_substitution", "Spec.separator_substitution", "Spec.insert_q_bech32", "Spec.insert_q_bech32m",
+    "Spec.bip173_valid", "Spec.bip173_invalid", "Spec.bip350_valid", "Spec.bip350_invalid",
+    "Spec.segwit_strings", "Spec.encode_vectors"
+  ],
+  "permitted_axioms": ["propext", "Quot.sound", "Classical.choice"]
+}

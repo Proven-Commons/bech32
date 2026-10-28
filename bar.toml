@@ -1,0 +1,40 @@
+# Read by bar/check.py in Proven-Commons/mission.
+# See playbook/verified-bar.md there for what each field means.
+
+[project]
+name = "bech32"
+# "in-progress" until every bar item passes, then "verified".
+status = "in-progress"
+page = "README.md"
+# GitHub handles of everyone who wrote the specification. It was drafted
+# by Claude, an AI agent, for the org: agent fdn-claude, for the fdn-0
+# account, posting as zero-aska on GitHub.
+spec_authors = ["claude", "fdn-0", "zero-aska"]
+# The program people run. A change to it voids the approval.
+entry_points = ["Main.lean"]
+
+[spec]
+# Bech32/Variant.lean holds only the type of the two variants, which the
+# statements use and the code returns.
+files = ["SPEC.md", "Spec.lean", "Spec/Defs.lean", "Bech32/Variant.lean"]
+# The code under proof: the functions the statements are about.
+code = ["Bech32.encode", "Bech32.decode"]
+
+# One entry per approval, added in a pull request the reviewer approves.
+# [[spec.approval]]
+# reviewer = "github-handle"
+# date = "2026-11-02"
+# sha256 = "..."
+# record = "https://github.com/Proven-Commons/bech32/pull/<n>"
+
+[tests]
+results = "tests/TEST-RESULTS.md"
+command = "python3 tests/run_tests.py"
+files = ["tests/run_tests.py", "tests/plant_bugs.py",
+         "tests/oracles/sipa/segwit_addr.py", "tests/oracles/sipa/segwit_addr.c",
+         "tests/oracles/sipa/segwit_addr.h", "tests/oracles/sipa/wrapper.c",
+         "tests/oracles/node/oracle.js", "tests/oracles/node/package.json",
+         "tests/oracles/node/package-lock.json", "tests/oracles/go/main.go",
+         "tests/oracles/go/go.mod", "tests/oracles/go/go.sum",
+         "tests/oracles/rust/src/main.rs", "tests/oracles/rust/Cargo.toml",
+         "tests/oracles/rust/Cargo.lock"]
