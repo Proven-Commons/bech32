@@ -1,4 +1,5 @@
 name = "bech32"
+license = "Apache-2.0"
 version = "0.1.0"
 defaultTargets = ["Bech32", "Spec", "Proofs", "bech32"]
 
