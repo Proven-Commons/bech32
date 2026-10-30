@@ -1,16 +1,18 @@
 name = "bech32"
 license = "Apache-2.0"
 version = "0.1.0"
-defaultTargets = ["Bech32", "Spec", "Proofs", "bech32"]
+defaultTargets = ["Bech32", "Bech32Spec", "Bech32Proofs", "bech32"]
 
 [[lean_lib]]
 name = "Bech32"
 
 [[lean_lib]]
-name = "Spec"
+name = "Bech32Spec"
+roots = ["Bech32.Spec"]
 
 [[lean_lib]]
-name = "Proofs"
+name = "Bech32Proofs"
+roots = ["Bech32.Proofs"]
 
 [[lean_exe]]
 name = "bech32"

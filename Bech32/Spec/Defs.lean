@@ -1,10 +1,10 @@
 /-
-  The definitions the statements in `Spec.lean` use, written from
+  The definitions the statements in `Bech32/Spec.lean` use, written from
   BIP 173 (https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki)
   and BIP 350 (https://github.com/bitcoin/bips/blob/master/bip-0350.mediawiki).
 
   This file is part of the specification: a reviewer approves it with
-  `Spec.lean`. It shares nothing with the code in `Bech32/`: it imports
+  `Bech32/Spec.lean`. It shares nothing with the code in `Bech32/`: it imports
   only `Bech32/Variant.lean`, the type that names the two variants,
   which is part of the specification too.
 
@@ -16,7 +16,7 @@
 
 import Bech32.Variant
 
-namespace Spec
+namespace Bech32.Spec
 
 open Bech32 (Variant)
 
@@ -118,4 +118,4 @@ structure Valid (s : List Char) (v : Variant) (hrp : List Char) (values : List N
 def Decodes (s : List Char) (v : Variant) (hrp : List Char) (data : List Nat) : Prop :=
   ∃ check : List Nat, check.length = 6 ∧ Valid s v hrp (data ++ check)
 
-end Spec
+end Bech32.Spec

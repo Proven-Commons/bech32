@@ -23,27 +23,27 @@ From Lean:
 
 ## What is proved
 
-The statements are in `Spec.lean`, the definitions they use in `Spec/Defs.lean`, and the proofs in `Proofs/`.
+The statements are in `Bech32/Spec.lean`, the definitions they use in `Bech32/Spec/Defs.lean`, and the proofs in `Bech32/Proofs/`.
 
 | Claim | Theorem |
 |-------|---------|
-| `decode s` succeeds exactly when `s` is valid by BIP 173 and BIP 350, and then gives its variant, its human-readable part in lower case, and its data. `Spec.Valid` states the rules: at most 90 characters, each from 33 to 126, not mixed case, a human-readable part of 1 to 83 characters, the separator, at least 6 data characters, and the checksum of BIP 173's own code giving 1 (Bech32) or `0x2bc830a3` (Bech32m). | `Spec.decode_iff` |
-| `encode` succeeds exactly when the human-readable part is not empty, has only characters from 33 to 126 and no upper case letter, and the string fits in 90 characters. | `Spec.encode_isSome` |
-| Decoding an encoding gives back the variant, the human-readable part and the data. | `Spec.decode_encode` |
-| Every string `decode` accepts is what `encode` writes, in lower case. | `Spec.encode_decode` |
-| An encoding has no upper case letter. | `Spec.encode_lower` |
-| Two strings that, in lower case, differ in one character of the data part, where each holds a data character, never both decode, under either variant. | `Spec.one_substitution` |
-| A data character changed to `1` moves the separator, and both strings can be valid: two proved pairs, one under a single variant and one across the two. | `Spec.separator_substitution` |
-| Inserting `q` before a final `p` keeps a Bech32 string valid, if it still fits. | `Spec.insert_q_bech32` |
-| The same insertion never leaves a Bech32m string valid. | `Spec.insert_q_bech32m` |
-| Every test vector of BIP 173 and BIP 350, valid and invalid; the segwit address vectors of both, read as strings; and encodings at the limits. | `Spec.bip173_valid`, `Spec.bip173_invalid`, `Spec.bip350_valid`, `Spec.bip350_invalid`, `Spec.segwit_strings`, `Spec.encode_vectors` |
+| `decode s` succeeds exactly when `s` is valid by BIP 173 and BIP 350, and then gives its variant, its human-readable part in lower case, and its data. `Bech32.Spec.Valid` states the rules: at most 90 characters, each from 33 to 126, not mixed case, a human-readable part of 1 to 83 characters, the separator, at least 6 data characters, and the checksum of BIP 173's own code giving 1 (Bech32) or `0x2bc830a3` (Bech32m). | `Bech32.Spec.decode_iff` |
+| `encode` succeeds exactly when the human-readable part is not empty, has only characters from 33 to 126 and no upper case letter, and the string fits in 90 characters. | `Bech32.Spec.encode_isSome` |
+| Decoding an encoding gives back the variant, the human-readable part and the data. | `Bech32.Spec.decode_encode` |
+| Every string `decode` accepts is what `encode` writes, in lower case. | `Bech32.Spec.encode_decode` |
+| An encoding has no upper case letter. | `Bech32.Spec.encode_lower` |
+| Two strings that, in lower case, differ in one character of the data part, where each holds a data character, never both decode, under either variant. | `Bech32.Spec.one_substitution` |
+| A data character changed to `1` moves the separator, and both strings can be valid: two proved pairs, one under a single variant and one across the two. | `Bech32.Spec.separator_substitution` |
+| Inserting `q` before a final `p` keeps a Bech32 string valid, if it still fits. | `Bech32.Spec.insert_q_bech32` |
+| The same insertion never leaves a Bech32m string valid. | `Bech32.Spec.insert_q_bech32m` |
+| Every test vector of BIP 173 and BIP 350, valid and invalid; the segwit address vectors of both, read as strings; and encodings at the limits. | `Bech32.Spec.bip173_valid`, `Bech32.Spec.bip173_invalid`, `Bech32.Spec.bip350_valid`, `Bech32.Spec.bip350_invalid`, `Bech32.Spec.segwit_strings`, `Bech32.Spec.encode_vectors` |
 
 The command-line tool in `Main.lean` answers requests with these functions directly.
 
 ## What is not proved
 
-- **Segwit addresses.** The witness version, the program length, the conversion between bytes and 5-bit values and its padding, and which variant each witness version needs are a later slice. Most of the addresses BIP 350 lists as invalid are valid strings, and `Spec.segwit_strings` says which.
-- **Errors in more than one character.** BIP 173 says the checksum catches any error in at most 4 characters, for strings of one variant. Only the one-character case in the data part, among data characters, is proved here, and nothing tests the rest. A decoder that accepts both variants, as this one does, can be fooled by fewer: BIP 350 notes that a valid Bech32 string and a valid Bech32m string can differ in only 3 characters. An error in the human-readable part can change two checksum values at once, and `Spec.one_substitution` does not cover it.
+- **Segwit addresses.** The witness version, the program length, the conversion between bytes and 5-bit values and its padding, and which variant each witness version needs are a later slice. Most of the addresses BIP 350 lists as invalid are valid strings, and `Bech32.Spec.segwit_strings` says which.
+- **Errors in more than one character.** BIP 173 says the checksum catches any error in at most 4 characters, for strings of one variant. Only the one-character case in the data part, among data characters, is proved here, and nothing tests the rest. A decoder that accepts both variants, as this one does, can be fooled by fewer: BIP 350 notes that a valid Bech32 string and a valid Bech32m string can differ in only 3 characters. An error in the human-readable part can change two checksum values at once, and `Bech32.Spec.one_substitution` does not cover it.
 - **Longer strings.** Some formats, such as Lightning invoices, use Bech32 past 90 characters. This library keeps the 90-character limit of BIP 173.
 - **Reading requests and printing answers in `Main.lean`.** The differential tests cover them.
 
@@ -58,7 +58,7 @@ The tests compare every answer with five other implementations and count each di
   - an upper case HRP is written as it is by sipa's Python reference, with the data in lower case, which gives mixed-case strings such as `A1g7sgd8` (the checksum of `A1G7SGD8`, which BIP 173 lists as invalid), and is lower-cased by npm, Go and Rust;
   - HRP characters outside 33 to 126 are written by sipa's Python reference and Go; Go also lower-cases them with Unicode rules and checksums their UTF-8 bytes.
 
-  This library refuses all of these: `Spec.encode_isSome` says exactly what it writes.
+  This library refuses all of these: `Bech32.Spec.encode_isSome` says exactly what it writes.
 - **C strings.** sipa's C reference reads its input up to the first NUL.
 
 ## What you must trust
@@ -84,7 +84,7 @@ python3 tests/run_tests.py
 python3 tests/plant_bugs.py
 ```
 
-`lake comparator --paranoid` builds the statements and the proofs in a sandbox. It checks that each theorem in `Proofs/` proves exactly the statement in `Spec.lean`, using only the axioms `propext`, `Classical.choice`, and `Quot.sound`, and replays it through every kernel shipped with Lean.
+`lake comparator --paranoid` builds the statements and the proofs in a sandbox. It checks that each theorem in `Bech32/Proofs/` proves exactly the statement in `Bech32/Spec.lean`, using only the axioms `propext`, `Classical.choice`, and `Quot.sound`, and replays it through every kernel shipped with Lean.
 
 The test script builds the tool and the oracles, and runs these inputs:
 
@@ -101,9 +101,9 @@ It then rewrites `tests/TEST-RESULTS.md`, which also counts the substitutions an
 
 - `Bech32/Basic.lean`: the code under proof.
 - `Bech32/Variant.lean`: the type of the two variants. It is part of the specification, since the statements use it.
-- `Spec.lean`: the statements, with `sorry` for proofs. A reviewer approves this file.
-- `Spec/Defs.lean`: the definitions the statements use, written from BIP 173 and BIP 350.
-- `Proofs.lean` and `Proofs/`: the proofs, under the same names.
+- `Bech32/Spec.lean`: the statements, with `sorry` for proofs. A reviewer approves this file.
+- `Bech32/Spec/Defs.lean`: the definitions the statements use, written from BIP 173 and BIP 350.
+- `Bech32/Proofs.lean` and `Bech32/Proofs/`: the proofs, under the same names.
 - `Main.lean`: the command-line tool the tests drive.
 - `lakefile.toml`: the build. It names the package and its version, its libraries and executable, and the default targets, and sets nothing else.
 - `comparator.json`: which theorems `lake comparator` checks, and which axioms it allows.

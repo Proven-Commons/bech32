@@ -2,16 +2,16 @@
   Decoding and encoding against the specification.
 
   The code's checksum (`polymodStep`, unrolled) is the BIP's loop
-  (`polymod_eq`), the code's lower case is `Spec.lower` (`toLower_eq`),
-  the code's data characters are `Spec.charset`, and `splitLast` finds
+  (`polymod_eq`), the code's lower case is `Bech32.Spec.lower` (`toLower_eq`),
+  the code's data characters are `Bech32.Spec.charset`, and `splitLast` finds
   the separator. From these, `decode` succeeds exactly on the strings
-  `Spec.Decodes` describes (`decode_iff'`), and `encode` succeeds
+  `Bech32.Spec.Decodes` describes (`decode_iff'`), and `encode` succeeds
   exactly when its human-readable part and length allow it
   (`encode_isSome'`), writing no upper case letter (`encode_lower'`).
 -/
 
 import Bech32
-import Spec.Defs
+import Bech32.Spec.Defs
 
 namespace Bech32.Proofs
 
@@ -55,7 +55,7 @@ theorem ite_bit (b i c g : Nat) :
 theorem polymodStep_eq_spec (chk v : Nat) :
     Bech32.polymodStep chk v =
       (List.range 5).foldl
-        (fun c i => c ^^^ (if ((chk >>> 25) >>> i) &&& 1 = 1 then Spec.GEN.getD i 0 else 0))
+        (fun c i => c ^^^ (if ((chk >>> 25) >>> i) &&& 1 = 1 then Bech32.Spec.GEN.getD i 0 else 0))
         (((chk &&& 0x1ffffff) <<< 5) ^^^ v) := by
   have e0 := ite_bit (chk >>> 25) 0
   have e1 := ite_bit (chk >>> 25) 1
@@ -67,104 +67,104 @@ theorem polymodStep_eq_spec (chk v : Nat) :
   rfl
 
 /-- The code's checksum is BIP 173's `bech32_polymod`. -/
-theorem polymod_eq (vs : List Nat) : Bech32.polymod vs = Spec.polymod vs := by
-  unfold Bech32.polymod Spec.polymod
+theorem polymod_eq (vs : List Nat) : Bech32.polymod vs = Bech32.Spec.polymod vs := by
+  unfold Bech32.polymod Bech32.Spec.polymod
   congr 1
   funext chk v
   exact polymodStep_eq_spec chk v
 
 /-- The code's HRP expansion is BIP 173's `bech32_hrp_expand`. -/
-theorem hrpExpand_eq (s : List Char) : Bech32.hrpExpand s = Spec.hrpExpand s := rfl
+theorem hrpExpand_eq (s : List Char) : Bech32.hrpExpand s = Bech32.Spec.hrpExpand s := rfl
 
 /-! ## Characters -/
 
-theorem upper_iff (c : Char) : Spec.Upper c ↔ 65 ≤ c.toNat ∧ c.toNat ≤ 90 := by
-  simp only [Spec.Upper, Char.le_def, UInt32.le_iff_toNat_le, Char.toNat_val]
+theorem upper_iff (c : Char) : Bech32.Spec.Upper c ↔ 65 ≤ c.toNat ∧ c.toNat ≤ 90 := by
+  simp only [Bech32.Spec.Upper, Char.le_def, UInt32.le_iff_toNat_le, Char.toNat_val]
   rfl
 
-theorem lower_iff (c : Char) : Spec.Lower c ↔ 97 ≤ c.toNat ∧ c.toNat ≤ 122 := by
-  simp only [Spec.Lower, Char.le_def, UInt32.le_iff_toNat_le, Char.toNat_val]
+theorem lower_iff (c : Char) : Bech32.Spec.Lower c ↔ 97 ≤ c.toNat ∧ c.toNat ≤ 122 := by
+  simp only [Bech32.Spec.Lower, Char.le_def, UInt32.le_iff_toNat_le, Char.toNat_val]
   rfl
 
-theorem isUpper_iff (c : Char) : Bech32.isUpper c = true ↔ Spec.Upper c := by
-  simp [Bech32.isUpper, Spec.Upper]
+theorem isUpper_iff (c : Char) : Bech32.isUpper c = true ↔ Bech32.Spec.Upper c := by
+  simp [Bech32.isUpper, Bech32.Spec.Upper]
 
-theorem isLower_iff (c : Char) : Bech32.isLower c = true ↔ Spec.Lower c := by
-  simp [Bech32.isLower, Spec.Lower]
+theorem isLower_iff (c : Char) : Bech32.isLower c = true ↔ Bech32.Spec.Lower c := by
+  simp [Bech32.isLower, Bech32.Spec.Lower]
 
 theorem isPrintable_iff (c : Char) :
     Bech32.isPrintable c = true ↔ 33 ≤ c.toNat ∧ c.toNat ≤ 126 := by
   simp [Bech32.isPrintable]
 
-/-- The code's lower case is `Spec.lower`. -/
-theorem toLower_eq : Bech32.toLower = Spec.lower := by
+/-- The code's lower case is `Bech32.Spec.lower`. -/
+theorem toLower_eq : Bech32.toLower = Bech32.Spec.lower := by
   funext c
-  simp only [Bech32.toLower, Spec.lower, Bech32.isUpper, Bool.and_eq_true, decide_eq_true_eq]
+  simp only [Bech32.toLower, Bech32.Spec.lower, Bech32.isUpper, Bool.and_eq_true, decide_eq_true_eq]
 
 theorem toNat_ofNat_of_lt (n : Nat) (h : n < 0xd800) : (Char.ofNat n).toNat = n := by
   have hv : n.isValidChar := Or.inl h
   simp only [Char.ofNat, hv, ↓reduceDIte, Char.ofNatAux, Char.toNat_mk]
   rfl
 
-theorem lower_toNat_of_upper (c : Char) (h : Spec.Upper c) :
-    (Spec.lower c).toNat = c.toNat + 32 := by
+theorem lower_toNat_of_upper (c : Char) (h : Bech32.Spec.Upper c) :
+    (Bech32.Spec.lower c).toNat = c.toNat + 32 := by
   have := (upper_iff c).1 h
   have h' : 'A' ≤ c ∧ c ≤ 'Z' := h
-  simp only [Spec.lower, h', and_self, ↓reduceIte]
+  simp only [Bech32.Spec.lower, h', and_self, ↓reduceIte]
   exact toNat_ofNat_of_lt _ (by omega)
 
-theorem lower_of_not_upper (c : Char) (h : ¬ Spec.Upper c) : Spec.lower c = c := by
+theorem lower_of_not_upper (c : Char) (h : ¬ Bech32.Spec.Upper c) : Bech32.Spec.lower c = c := by
   have h' : ¬ ('A' ≤ c ∧ c ≤ 'Z') := h
-  simp only [Spec.lower, h', ↓reduceIte]
+  simp only [Bech32.Spec.lower, h', ↓reduceIte]
 
-/-- `Spec.lower` keeps characters in the range 33 to 126. -/
+/-- `Bech32.Spec.lower` keeps characters in the range 33 to 126. -/
 theorem lower_range (c : Char) (h : 33 ≤ c.toNat ∧ c.toNat ≤ 126) :
-    33 ≤ (Spec.lower c).toNat ∧ (Spec.lower c).toNat ≤ 126 := by
-  by_cases hc : Spec.Upper c
+    33 ≤ (Bech32.Spec.lower c).toNat ∧ (Bech32.Spec.lower c).toNat ≤ 126 := by
+  by_cases hc : Bech32.Spec.Upper c
   · have := (upper_iff c).1 hc
     rw [lower_toNat_of_upper c hc]; omega
   · rw [lower_of_not_upper c hc]; exact h
 
-/-- No `Spec.lower c` is an upper case letter. -/
-theorem not_upper_lower (c : Char) : ¬ Spec.Upper (Spec.lower c) := by
-  by_cases hc : Spec.Upper c
+/-- No `Bech32.Spec.lower c` is an upper case letter. -/
+theorem not_upper_lower (c : Char) : ¬ Bech32.Spec.Upper (Bech32.Spec.lower c) := by
+  by_cases hc : Bech32.Spec.Upper c
   · have := (upper_iff c).1 hc
     rw [upper_iff, lower_toNat_of_upper c hc]; omega
   · rw [lower_of_not_upper c hc]; exact hc
 
-theorem lower_lower (c : Char) : Spec.lower (Spec.lower c) = Spec.lower c :=
+theorem lower_lower (c : Char) : Bech32.Spec.lower (Bech32.Spec.lower c) = Bech32.Spec.lower c :=
   lower_of_not_upper _ (not_upper_lower c)
 
 /-! ## The data characters -/
 
 /-- The code's data characters are those of the BIP. -/
-theorem charset_eq : Bech32.charset = Spec.charset := by decide
+theorem charset_eq : Bech32.charset = Bech32.Spec.charset := by decide
 
-/-- The code writes a value as `Spec.dataChar` does. -/
-theorem charOf_eq (v : Fin 32) : Bech32.charOf v = Spec.dataChar v.val := by
-  unfold Bech32.charOf Spec.dataChar
+/-- The code writes a value as `Bech32.Spec.dataChar` does. -/
+theorem charOf_eq (v : Fin 32) : Bech32.charOf v = Bech32.Spec.dataChar v.val := by
+  unfold Bech32.charOf Bech32.Spec.dataChar
   rw [charset_eq]
 
-theorem charset_length : Spec.charset.length = 32 := rfl
+theorem charset_length : Bech32.Spec.charset.length = 32 := rfl
 
-theorem dataChar_mem (n : Nat) (h : n < 32) : Spec.dataChar n ∈ Spec.charset := by
-  unfold Spec.dataChar
+theorem dataChar_mem (n : Nat) (h : n < 32) : Bech32.Spec.dataChar n ∈ Bech32.Spec.charset := by
+  unfold Bech32.Spec.dataChar
   rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem (by rw [charset_length]; exact h)]
   exact List.getElem_mem _
 
-theorem one_not_mem_charset : '1' ∉ Spec.charset := by decide
+theorem one_not_mem_charset : '1' ∉ Bech32.Spec.charset := by decide
 
-theorem charset_not_upper : ∀ c ∈ Spec.charset, ¬ Spec.Upper c := by
-  unfold Spec.Upper; decide
+theorem charset_not_upper : ∀ c ∈ Bech32.Spec.charset, ¬ Bech32.Spec.Upper c := by
+  unfold Bech32.Spec.Upper; decide
 
-theorem charset_range : ∀ c ∈ Spec.charset, 33 ≤ c.toNat ∧ c.toNat ≤ 126 := by decide
+theorem charset_range : ∀ c ∈ Bech32.Spec.charset, 33 ≤ c.toNat ∧ c.toNat ≤ 126 := by decide
 
 /-- `valueOf` reads back each data character. -/
-theorem valueOf_dataChar : ∀ x : Fin 32, Bech32.valueOf (Spec.dataChar x.val) = some x := by
+theorem valueOf_dataChar : ∀ x : Fin 32, Bech32.valueOf (Bech32.Spec.dataChar x.val) = some x := by
   decide
 
 theorem mem_charset_of_valueOf (c : Char) (x : Fin 32) (h : Bech32.valueOf c = some x) :
-    c ∈ Spec.charset := by
+    c ∈ Bech32.Spec.charset := by
   simp only [Bech32.valueOf] at h
   split at h
   · rename_i hlt
@@ -175,13 +175,13 @@ theorem mem_charset_of_valueOf (c : Char) (x : Fin 32) (h : Bech32.valueOf c = s
 
 /-- `valueOf c = some x` exactly when `c` is the data character of `x`. -/
 theorem valueOf_eq_some_iff (c : Char) (x : Fin 32) :
-    Bech32.valueOf c = some x ↔ Spec.dataChar x.val = c := by
+    Bech32.valueOf c = some x ↔ Bech32.Spec.dataChar x.val = c := by
   constructor
   · intro h
     have hm := mem_charset_of_valueOf c x h
     obtain ⟨i, hi, rfl⟩ := List.getElem_of_mem hm
-    have e : Spec.dataChar i = Spec.charset[i] := by
-      unfold Spec.dataChar
+    have e : Bech32.Spec.dataChar i = Bech32.Spec.charset[i] := by
+      unfold Bech32.Spec.dataChar
       rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi]
       rfl
     have := valueOf_dataChar ⟨i, hi⟩
@@ -193,12 +193,12 @@ theorem valueOf_eq_some_iff (c : Char) (x : Fin 32) :
     exact valueOf_dataChar x
 
 /-- `valueOf` fails exactly on the characters that are not data characters. -/
-theorem valueOf_eq_none_iff (c : Char) : Bech32.valueOf c = none ↔ c ∉ Spec.charset := by
+theorem valueOf_eq_none_iff (c : Char) : Bech32.valueOf c = none ↔ c ∉ Bech32.Spec.charset := by
   constructor
   · intro h hm
     obtain ⟨i, hi, rfl⟩ := List.getElem_of_mem hm
-    have e : Spec.dataChar i = Spec.charset[i] := by
-      unfold Spec.dataChar
+    have e : Bech32.Spec.dataChar i = Bech32.Spec.charset[i] := by
+      unfold Bech32.Spec.dataChar
       rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi]
       rfl
     have := valueOf_dataChar ⟨i, hi⟩
@@ -212,7 +212,7 @@ theorem valueOf_eq_none_iff (c : Char) : Bech32.valueOf c = none ↔ c ∉ Spec.
 
 /-- The data part reads as the values `d` exactly when it is their data characters. -/
 theorem mapM_valueOf_eq_some_iff (cs : List Char) (d : List (Fin 32)) :
-    cs.mapM Bech32.valueOf = some d ↔ cs = d.map (fun x => Spec.dataChar x.val) := by
+    cs.mapM Bech32.valueOf = some d ↔ cs = d.map (fun x => Bech32.Spec.dataChar x.val) := by
   induction cs generalizing d with
   | nil =>
     cases d <;> simp
@@ -226,7 +226,7 @@ theorem mapM_valueOf_eq_some_iff (cs : List Char) (d : List (Fin 32)) :
 
 /-- No data character is the separator. -/
 theorem one_not_mem_map_dataChar (vals : List Nat) (h : ∀ x ∈ vals, x < 32) :
-    '1' ∉ vals.map Spec.dataChar := by
+    '1' ∉ vals.map Bech32.Spec.dataChar := by
   intro hm
   obtain ⟨x, hx, e⟩ := List.mem_map.1 hm
   exact one_not_mem_charset (e ▸ dataChar_mem x (h x hx))
@@ -318,7 +318,7 @@ theorem split_unique (h r h' r' : List Char) (hr : '1' ∉ r) (hr' : '1' ∉ r')
   simp only [Option.some.injEq, Prod.mk.injEq] at e1
   exact ⟨e1.1.symm, e1.2.symm⟩
 
-/-- `split_unique` in the form `Spec.Valid.parts` uses. -/
+/-- `split_unique` in the form `Bech32.Spec.Valid.parts` uses. -/
 theorem split_unique' (h r h' r' : List Char) (hr : '1' ∉ r) (hr' : '1' ∉ r')
     (e : h ++ ['1'] ++ r = h' ++ ['1'] ++ r') : h = h' ∧ r = r' := by
   simp only [List.append_assoc, List.singleton_append] at e
@@ -337,13 +337,13 @@ theorem exists_fin_list (l : List Nat) (h : ∀ x ∈ l, x < 32) :
 /-! ## The checksum variant -/
 
 /-- The code's constants are those of the BIPs. -/
-theorem const_eq (v : Bech32.Variant) : v.const = Spec.const v := by
+theorem const_eq (v : Bech32.Variant) : v.const = Bech32.Spec.const v := by
   cases v <;> rfl
 
 /-- `variantOf` gives the variant whose constant the checksum gives. -/
 theorem variantOf_eq_some_iff (hrp : List Char) (vals : List Nat) (v : Bech32.Variant) :
     Bech32.variantOf hrp vals = some v ↔
-      Spec.polymod (Spec.hrpExpand hrp ++ vals) = Spec.const v := by
+      Bech32.Spec.polymod (Bech32.Spec.hrpExpand hrp ++ vals) = Bech32.Spec.const v := by
   rw [← polymod_eq, ← hrpExpand_eq, ← const_eq]
   simp only [Bech32.variantOf]
   generalize Bech32.polymod (Bech32.hrpExpand hrp ++ vals) = pm
@@ -364,7 +364,7 @@ theorem variantOf_eq_some_iff (hrp : List Char) (vals : List Nat) (v : Bech32.Va
 /-- What `decode` accepts is valid. -/
 theorem decode_some {s : String} {v : Bech32.Variant} {hrp : String} {data : List (Fin 32)}
     (h : Bech32.decode s = some (v, hrp, data)) :
-    Spec.Decodes s.toList v hrp.toList (data.map Fin.val) := by
+    Bech32.Spec.Decodes s.toList v hrp.toList (data.map Fin.val) := by
   simp only [Bech32.decode] at h
   split at h
   · cases h
@@ -422,20 +422,20 @@ theorem decode_some {s : String} {v : Bech32.Variant} {hrp : String} {data : Lis
 
 /-- What is valid, `decode` accepts. -/
 theorem decode_of_decodes {s : String} {v : Bech32.Variant} {hrp : String}
-    {data : List (Fin 32)} (h : Spec.Decodes s.toList v hrp.toList (data.map Fin.val)) :
+    {data : List (Fin 32)} (h : Bech32.Spec.Decodes s.toList v hrp.toList (data.map Fin.val)) :
     Bech32.decode s = some (v, hrp, data) := by
   obtain ⟨check, hcl, hv⟩ := h
   obtain ⟨check', rfl⟩ := exists_fin_list check
     (fun x hx => hv.values_lt x (List.mem_append_right _ hx))
   rw [← List.map_append] at hv
   have hsplit : Bech32.splitLast (s.toList.map Bech32.toLower) =
-      some (hrp.toList, (data ++ check').map (fun x => Spec.dataChar x.val)) := by
+      some (hrp.toList, (data ++ check').map (fun x => Bech32.Spec.dataChar x.val)) := by
     rw [toLower_eq, hv.parts, List.map_map, List.append_assoc, List.singleton_append]
     apply splitLast_append
     intro hm
     obtain ⟨x, -, hx⟩ := List.mem_map.1 hm
     exact one_not_mem_charset (hx ▸ dataChar_mem _ x.isLt)
-  have hmap : ((data ++ check').map (fun x => Spec.dataChar x.val)).mapM Bech32.valueOf =
+  have hmap : ((data ++ check').map (fun x => Bech32.Spec.dataChar x.val)).mapM Bech32.valueOf =
       some (data ++ check') := (mapM_valueOf_eq_some_iff _ _).2 rfl
   have hvar : Bech32.variantOf hrp.toList ((data ++ check').map Fin.val) = some v :=
     (variantOf_eq_some_iff _ _ _).2 hv.checksum
@@ -457,7 +457,7 @@ theorem decode_of_decodes {s : String} {v : Bech32.Variant} {hrp : String}
       Nat.not_lt, hall]
     exact ⟨⟨hlen, Bool.noConfusion⟩, hmix⟩
   have c2 : ¬ ((hrp.toList.isEmpty ||
-      decide (((data ++ check').map (fun x => Spec.dataChar x.val)).length < 6)) = true) := by
+      decide (((data ++ check').map (fun x => Bech32.Spec.dataChar x.val)).length < 6)) = true) := by
     simp only [Bool.or_eq_true, decide_eq_true_eq, List.isEmpty_iff, not_or, Nat.not_lt,
       List.length_map]
     exact ⟨hne, hdl⟩
@@ -470,10 +470,10 @@ theorem decode_of_decodes {s : String} {v : Bech32.Variant} {hrp : String}
   dsimp only
   rw [String.ofList_toList, List.take_left' (by simp [hcl])]
 
-/-- `Spec.decode_iff`. -/
+/-- `Bech32.Spec.decode_iff`. -/
 theorem decode_iff' (s : String) (v : Bech32.Variant) (hrp : String) (data : List (Fin 32)) :
     Bech32.decode s = some (v, hrp, data) ↔
-      Spec.Decodes s.toList v hrp.toList (data.map Fin.val) :=
+      Bech32.Spec.Decodes s.toList v hrp.toList (data.map Fin.val) :=
   ⟨decode_some, decode_of_decodes⟩
 
 /-! ## Encoding -/
@@ -484,7 +484,7 @@ theorem encode_cond_iff (hrp : String) (data : List (Fin 32)) :
         !hrp.toList.all (fun c => Bech32.isPrintable c && !Bech32.isUpper c) ||
         decide (90 < hrp.toList.length + 7 + data.length)) = true) ↔
       hrp.toList ≠ [] ∧
-      (∀ c ∈ hrp.toList, 33 ≤ c.toNat ∧ c.toNat ≤ 126 ∧ ¬ Spec.Upper c) ∧
+      (∀ c ∈ hrp.toList, 33 ≤ c.toNat ∧ c.toNat ≤ 126 ∧ ¬ Bech32.Spec.Upper c) ∧
       hrp.length + 1 + data.length + 6 ≤ 90 := by
   simp only [Bool.or_eq_true, List.isEmpty_iff, Bool.not_eq_true', decide_eq_true_eq, not_or,
     Nat.not_lt, Bool.not_eq_false, List.all_eq_true, Bool.and_eq_true, isPrintable_iff,
@@ -499,11 +499,11 @@ theorem encode_cond_iff (hrp : String) (data : List (Fin 32)) :
     obtain ⟨a, b, d⟩ := h2 c hc
     exact ⟨⟨a, b⟩, by simpa using d⟩
 
-/-- `Spec.encode_isSome`. -/
+/-- `Bech32.Spec.encode_isSome`. -/
 theorem encode_isSome' (v : Bech32.Variant) (hrp : String) (data : List (Fin 32)) :
     (Bech32.encode v hrp data).isSome ↔
       hrp.toList ≠ [] ∧
-      (∀ c ∈ hrp.toList, 33 ≤ c.toNat ∧ c.toNat ≤ 126 ∧ ¬ Spec.Upper c) ∧
+      (∀ c ∈ hrp.toList, 33 ≤ c.toNat ∧ c.toNat ≤ 126 ∧ ¬ Bech32.Spec.Upper c) ∧
       hrp.length + 1 + data.length + 6 ≤ 90 := by
   rw [← encode_cond_iff]
   simp only [Bech32.encode]
@@ -515,10 +515,10 @@ theorem encode_isSome' (v : Bech32.Variant) (hrp : String) (data : List (Fin 32)
     simp only [Option.isSome_some, true_iff]
     exact hc
 
-/-- `Spec.encode_lower`. -/
+/-- `Bech32.Spec.encode_lower`. -/
 theorem encode_lower' (v : Bech32.Variant) (hrp : String) (data : List (Fin 32)) (s : String)
     (h : Bech32.encode v hrp data = some s) :
-    ∀ c ∈ s.toList, ¬ Spec.Upper c := by
+    ∀ c ∈ s.toList, ¬ Bech32.Spec.Upper c := by
   simp only [Bech32.encode] at h
   split at h
   · cases h
@@ -531,7 +531,7 @@ theorem encode_lower' (v : Bech32.Variant) (hrp : String) (data : List (Fin 32))
     simp only [List.mem_append, List.mem_cons, List.mem_map] at hc'
     rcases hc' with hin | rfl | ⟨x, -, rfl⟩
     · exact (hc c hin).2.2
-    · unfold Spec.Upper; decide
+    · unfold Bech32.Spec.Upper; decide
     · rw [charOf_eq]
       exact charset_not_upper _ (dataChar_mem _ x.isLt)
 

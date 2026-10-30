@@ -1,18 +1,15 @@
 /-
-  The specification as Lean statements: the challenge file.
-
-  A reviewer who did not write this file approves it, and `bar.toml`
-  records the hash it had then. The proofs live in `Proofs.lean`, under
-  the same names; `lake comparator` checks that each one proves exactly
-  the statement written here. The `sorry`s below are expected in this
-  file only.
-
-  The definitions the statements use, written from BIP 173 and BIP 350,
-  are in `Spec/Defs.lean`. That file is part of the specification too.
+  The proofs of the statements in `Bech32/Spec.lean`, under the same names.
+  Each statement is copied from `Bech32/Spec.lean` word for word; `lake
+  comparator` checks that they match. The work is in `Bech32/Proofs/`; the
+  test vectors are checked by the kernel with `decide`.
 -/
 
 import Bech32
-import Spec.Defs
+import Bech32.Spec.Defs
+import Bech32.Proofs.Checksum
+import Bech32.Proofs.Decode
+import Bech32.Proofs.Final
 
 open Bech32 (Variant)
 
@@ -21,11 +18,12 @@ open Bech32 (Variant)
 /-- `decode` reads a string exactly as BIP 173 and BIP 350 set out:
     it gives the variant, the human-readable part in lower case, and
     the data without the checksum when the string is valid, as
-    `Spec.Decodes` states it, and fails when it is not. Since `decode`
+    `Bech32.Spec.Decodes` states it, and fails when it is not. Since `decode`
     is a function, a string has at most one reading. -/
-theorem Spec.decode_iff (s : String) (v : Variant) (hrp : String) (data : List (Fin 32)) :
+theorem Bech32.Spec.decode_iff (s : String) (v : Variant) (hrp : String) (data : List (Fin 32)) :
     Bech32.decode s = some (v, hrp, data) ↔
-      Spec.Decodes s.toList v hrp.toList (data.map Fin.val) := sorry
+      Bech32.Spec.Decodes s.toList v hrp.toList (data.map Fin.val) := 
+  Bech32.Proofs.decode_iff' s v hrp data
 
 /-! ## Encoding -/
 
@@ -33,29 +31,33 @@ theorem Spec.decode_iff (s : String) (v : Variant) (hrp : String) (data : List (
     one character, each in the range 33 to 126 and none an upper case
     letter, and the string fits in 90 characters: the human-readable
     part, the separator, the data and six checksum characters. -/
-theorem Spec.encode_isSome (v : Variant) (hrp : String) (data : List (Fin 32)) :
+theorem Bech32.Spec.encode_isSome (v : Variant) (hrp : String) (data : List (Fin 32)) :
     (Bech32.encode v hrp data).isSome ↔
       hrp.toList ≠ [] ∧
-      (∀ c ∈ hrp.toList, 33 ≤ c.toNat ∧ c.toNat ≤ 126 ∧ ¬ Spec.Upper c) ∧
-      hrp.length + 1 + data.length + 6 ≤ 90 := sorry
+      (∀ c ∈ hrp.toList, 33 ≤ c.toNat ∧ c.toNat ≤ 126 ∧ ¬ Bech32.Spec.Upper c) ∧
+      hrp.length + 1 + data.length + 6 ≤ 90 := 
+  Bech32.Proofs.encode_isSome' v hrp data
 
 /-- Decoding an encoding gives back the variant, the human-readable
     part and the data. -/
-theorem Spec.decode_encode (v : Variant) (hrp : String) (data : List (Fin 32)) (s : String)
+theorem Bech32.Spec.decode_encode (v : Variant) (hrp : String) (data : List (Fin 32)) (s : String)
     (h : Bech32.encode v hrp data = some s) :
-    Bech32.decode s = some (v, hrp, data) := sorry
+    Bech32.decode s = some (v, hrp, data) := 
+  Bech32.Proofs.decode_encode' v hrp data s h
 
 /-- What `decode` accepts, `encode` writes back in lower case. So the
     valid strings are exactly the encodings and their upper case forms. -/
-theorem Spec.encode_decode (s : String) (v : Variant) (hrp : String) (data : List (Fin 32))
+theorem Bech32.Spec.encode_decode (s : String) (v : Variant) (hrp : String) (data : List (Fin 32))
     (h : Bech32.decode s = some (v, hrp, data)) :
-    (Bech32.encode v hrp data).map String.toList = some (s.toList.map Spec.lower) := sorry
+    (Bech32.encode v hrp data).map String.toList = some (s.toList.map Bech32.Spec.lower) := 
+  Bech32.Proofs.encode_decode' s v hrp data h
 
 /-- An encoding has no upper case letter. BIP 173: "Encoders MUST
     always output an all lowercase Bech32 string." -/
-theorem Spec.encode_lower (v : Variant) (hrp : String) (data : List (Fin 32)) (s : String)
+theorem Bech32.Spec.encode_lower (v : Variant) (hrp : String) (data : List (Fin 32)) (s : String)
     (h : Bech32.encode v hrp data = some s) :
-    ∀ c ∈ s.toList, ¬ Spec.Upper c := sorry
+    ∀ c ∈ s.toList, ¬ Bech32.Spec.Upper c := 
+  Bech32.Proofs.encode_lower' v hrp data s h
 
 /-! ## Errors the checksum catches -/
 
@@ -64,44 +66,48 @@ theorem Spec.encode_lower (v : Variant) (hrp : String) (data : List (Fin 32)) (s
     in lower case, are the same but for one character after the
     separator, where they hold two different data characters. At most
     one of them decodes. A data character changed to `1` is not covered:
-    see `Spec.separator_substitution`. -/
-theorem Spec.one_substitution (s s' : String) (p q : List Char) (x y : Char)
+    see `Bech32.Spec.separator_substitution`. -/
+theorem Bech32.Spec.one_substitution (s s' : String) (p q : List Char) (x y : Char)
     (hp : '1' ∈ p) (hq : '1' ∉ q)
-    (hx : x ∈ Spec.charset) (hy : y ∈ Spec.charset) (hxy : x ≠ y)
-    (hs : s.toList.map Spec.lower = p ++ x :: q)
-    (hs' : s'.toList.map Spec.lower = p ++ y :: q) :
-    Bech32.decode s = none ∨ Bech32.decode s' = none := sorry
+    (hx : x ∈ Bech32.Spec.charset) (hy : y ∈ Bech32.Spec.charset) (hxy : x ≠ y)
+    (hs : s.toList.map Bech32.Spec.lower = p ++ x :: q)
+    (hs' : s'.toList.map Bech32.Spec.lower = p ++ y :: q) :
+    Bech32.decode s = none ∨ Bech32.decode s' = none := 
+  Bech32.Proofs.one_substitution' s s' p q x y hp hq hx hy hxy hs hs'
 
-/-- What `Spec.one_substitution` leaves out. A data character changed
+/-- What `Bech32.Spec.one_substitution` leaves out. A data character changed
     to `1` moves the separator, since the separator is the last `1`, and
     both strings can then be valid: under one variant, as in the first
     pair, or under both, as in the second. -/
-theorem Spec.separator_substitution :
+theorem Bech32.Spec.separator_substitution :
     (Bech32.decode "bc1et06sdxfhesf7").map (·.1) = some .bech32 ∧
     Bech32.decode "bc1et06sd1fhesf7" = some (.bech32, "bc1et06sd", []) ∧
     (Bech32.decode "bc1xd49x4cqqzp2cp6").map (·.1) = some .bech32 ∧
-    Bech32.decode "bc1xd49x41qqzp2cp6" = some (.bech32m, "bc1xd49x4", [0, 0]) := sorry
+    Bech32.decode "bc1xd49x41qqzp2cp6" = some (.bech32m, "bc1xd49x4", [0, 0]) := by
+  and_intros <;> decide +kernel
 
 /-- The weakness that BIP 350 fixes: inserting `q` before a final `p`
     keeps a Bech32 string valid, as long as it still fits in 90
     characters. -/
-theorem Spec.insert_q_bech32 (s : String) (hrp : String) (data : List (Fin 32)) (p : List Char)
+theorem Bech32.Spec.insert_q_bech32 (s : String) (hrp : String) (data : List (Fin 32)) (p : List Char)
     (h : Bech32.decode s = some (.bech32, hrp, data))
-    (hp : s.toList.map Spec.lower = p ++ ['p']) (hlen : s.length < 90) :
-    ∃ data', Bech32.decode (String.ofList (p ++ ['q', 'p'])) = some (.bech32, hrp, data') := sorry
+    (hp : s.toList.map Bech32.Spec.lower = p ++ ['p']) (hlen : s.length < 90) :
+    ∃ data', Bech32.decode (String.ofList (p ++ ['q', 'p'])) = some (.bech32, hrp, data') := 
+  Bech32.Proofs.insert_q_bech32' s hrp data p h hp hlen
 
 /-- Bech32m does not have that weakness: inserting `q` before a final
     `p` of a Bech32m string never gives a valid string, of either
     variant. -/
-theorem Spec.insert_q_bech32m (s : String) (hrp : String) (data : List (Fin 32)) (p : List Char)
+theorem Bech32.Spec.insert_q_bech32m (s : String) (hrp : String) (data : List (Fin 32)) (p : List Char)
     (h : Bech32.decode s = some (.bech32m, hrp, data))
-    (hp : s.toList.map Spec.lower = p ++ ['p']) :
-    Bech32.decode (String.ofList (p ++ ['q', 'p'])) = none := sorry
+    (hp : s.toList.map Bech32.Spec.lower = p ++ ['p']) :
+    Bech32.decode (String.ofList (p ++ ['q', 'p'])) = none := 
+  Bech32.Proofs.insert_q_bech32m' s hrp data p h hp
 
 /-! ## Test vectors -/
 
 /-- The valid Bech32 strings of BIP 173. -/
-theorem Spec.bip173_valid :
+theorem Bech32.Spec.bip173_valid :
     Bech32.decode "A12UEL5L" = some (.bech32, "a", []) ∧
     Bech32.decode "a12uel5l" = some (.bech32, "a", []) ∧
     Bech32.decode "an83characterlonghumanreadablepartthatcontainsthenumber1andtheexcludedcharactersbio1tt5tgs" =
@@ -112,10 +118,11 @@ theorem Spec.bip173_valid :
       some (.bech32, "1", List.replicate 82 0) ∧
     (Bech32.decode "split1checkupstagehandshakeupstreamerranterredcaperred2y9e3w").map (·.1) =
       some .bech32 ∧
-    Bech32.decode "?1ezyfcl" = some (.bech32, "?", []) := sorry
+    Bech32.decode "?1ezyfcl" = some (.bech32, "?", []) := by
+  and_intros <;> decide +kernel
 
 /-- The invalid strings of BIP 173, with the reasons it gives. -/
-theorem Spec.bip173_invalid :
+theorem Bech32.Spec.bip173_invalid :
     -- HRP character out of range
     Bech32.decode "\x201nwldj5" = none ∧
     Bech32.decode "\x7F1axkwrx" = none ∧
@@ -136,12 +143,13 @@ theorem Spec.bip173_invalid :
     Bech32.decode "A1G7SGD8" = none ∧
     -- empty HRP
     Bech32.decode "10a06t8" = none ∧
-    Bech32.decode "1qzzfhee" = none := sorry
+    Bech32.decode "1qzzfhee" = none := by
+  and_intros <;> decide +kernel
 
 /-- The valid Bech32m strings of BIP 350. "No string can be
     simultaneously valid Bech32 and Bech32m, so the above examples also
     serve as invalid test vectors for Bech32": each reads as Bech32m. -/
-theorem Spec.bip350_valid :
+theorem Bech32.Spec.bip350_valid :
     Bech32.decode "A1LQFN3A" = some (.bech32m, "a", []) ∧
     Bech32.decode "a1lqfn3a" = some (.bech32m, "a", []) ∧
     Bech32.decode "an83characterlonghumanreadablepartthatcontainsthetheexcludedcharactersbioandnumber11sg7hg6" =
@@ -152,10 +160,11 @@ theorem Spec.bip350_valid :
       some (.bech32m, "1", List.replicate 82 31) ∧
     (Bech32.decode "split1checkupstagehandshakeupstreamerranterredcaperredlc445v").map (·.1) =
       some .bech32m ∧
-    Bech32.decode "?1v759aa" = some (.bech32m, "?", []) := sorry
+    Bech32.decode "?1v759aa" = some (.bech32m, "?", []) := by
+  and_intros <;> decide +kernel
 
 /-- The invalid Bech32m strings of BIP 350, with the reasons it gives. -/
-theorem Spec.bip350_invalid :
+theorem Bech32.Spec.bip350_invalid :
     -- HRP character out of range
     Bech32.decode "\x201xj0phk" = none ∧
     Bech32.decode "\x7F1g6xzxy" = none ∧
@@ -178,7 +187,8 @@ theorem Spec.bip350_invalid :
     Bech32.decode "M1VUXWEZ" = none ∧
     -- empty HRP
     Bech32.decode "16plkw9" = none ∧
-    Bech32.decode "1p2gdwpf" = none := sorry
+    Bech32.decode "1p2gdwpf" = none := by
+  and_intros <;> decide +kernel
 
 /-- The segwit address vectors of BIP 173 and BIP 350, read as strings.
     This slice checks the string layer only: most of the addresses
@@ -187,7 +197,7 @@ theorem Spec.bip350_invalid :
     padding or variant. The comment on each line gives the BIP's
     verdict on the address: BIP 350's, then the eight addresses only
     BIP 173 lists. -/
-theorem Spec.segwit_strings :
+theorem Bech32.Spec.segwit_strings :
     -- valid addresses
     (Bech32.decode "BC1QW508D6QEJXTDG4Y5R3ZARVARY0C5XW7KV8F3T4").map (·.1) = some .bech32 ∧
     (Bech32.decode "tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7").map (·.1) = some .bech32 ∧
@@ -240,11 +250,12 @@ theorem Spec.segwit_strings :
     -- BIP 173 only: zero padding of more than 4 bits
     (Bech32.decode "bc1zw508d6qejxtdg4y5r3zarvaryvqyzf3du").map (·.1) = some .bech32 ∧
     -- BIP 173 only: non-zero padding in 8-to-5 conversion
-    (Bech32.decode "tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3pjxtptv").map (·.1) = some .bech32 := sorry
+    (Bech32.decode "tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3pjxtptv").map (·.1) = some .bech32 := by
+  and_intros <;> decide +kernel
 
 /-- Encodings: the BIP strings that are encodings, and the limits of
     `encode`. -/
-theorem Spec.encode_vectors :
+theorem Bech32.Spec.encode_vectors :
     Bech32.encode .bech32 "a" [] = some "a12uel5l" ∧
     Bech32.encode .bech32m "a" [] = some "a1lqfn3a" ∧
     Bech32.encode .bech32 "abcdef" (List.finRange 32) =
@@ -260,4 +271,5 @@ theorem Spec.encode_vectors :
     Bech32.encode .bech32 "\x7F" [] = none ∧
     -- 90 characters fit, 91 do not
     (Bech32.encode .bech32 "a" (List.replicate 82 0)).isSome ∧
-    Bech32.encode .bech32 "a" (List.replicate 83 0) = none := sorry
+    Bech32.encode .bech32 "a" (List.replicate 83 0) = none := by
+  and_intros <;> decide +kernel

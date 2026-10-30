@@ -7,7 +7,7 @@
   the checksum must give: 1 for Bech32, `0x2bc830a3` for Bech32m.
 
   `encode` writes a string, and `decode` reads one back. The statements
-  about them are in `Spec.lean`. The type of the two variants is in
+  about them are in `Bech32/Spec.lean`. The type of the two variants is in
   `Bech32/Variant.lean`, which is part of the specification.
 -/
 

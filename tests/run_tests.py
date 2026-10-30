@@ -58,9 +58,9 @@ Main.lean). Its answers are checked two ways.
 
 The record also counts two of the proved claims: no single
 substitution in the data part of a valid string gives a string that
-decodes (`Spec.one_substitution`), and inserting `q` before a final `p`
+decodes (`Bech32.Spec.one_substitution`), and inserting `q` before a final `p`
 keeps every Bech32 string that still fits in 90 characters valid and no
-Bech32m string valid (`Spec.insert_q_bech32`, `Spec.insert_q_bech32m`).
+Bech32m string valid (`Bech32.Spec.insert_q_bech32`, `Bech32.Spec.insert_q_bech32m`).
 
 Inputs come from a recorded seed, after fixed sets:
 
@@ -620,7 +620,7 @@ def difference_reason(oracle, kind, x, got, theirs):
 # checksum, case or characters has a valid checksum: Bech32 in BIP 173,
 # and in BIP 350 Bech32 for witness version 0 and Bech32m after; the
 # empty `bc1gmk9yu` is Bech32.
-# `Spec.segwit_strings` proves the same for the strings it lists.
+# `Bech32.Spec.segwit_strings` proves the same for the strings it lists.
 BIP173_VALID = ["A12UEL5L", "a12uel5l",
                 "an83characterlonghumanreadablepartthatcontainsthenumber1andtheexcludedcharacter"
                 "sbio1tt5tgs",
@@ -699,7 +699,7 @@ VECTORS = ([(s, "bech32") for s in BIP173_VALID] + [(s, None) for s in BIP173_IN
            + [(s, "bech32m") for s in BIP350_VALID] + [(s, None) for s in BIP350_INVALID]
            + BIP173_SEGWIT + BIP350_SEGWIT)
 
-# `Spec.encode_vectors`: (variant, HRP, data) and the string, or None.
+# `Bech32.Spec.encode_vectors`: (variant, HRP, data) and the string, or None.
 ENCODE_VECTORS = [
     (("bech32", "a", []), "a12uel5l"), (("bech32m", "a", []), "a1lqfn3a"),
     (("bech32", "abcdef", list(range(32))), "abcdef1qpzry9x8gf2tvdw0s3jn54khce6mua7lmqqqxw"),

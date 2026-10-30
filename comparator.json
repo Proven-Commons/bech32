@@ -1,11 +1,11 @@
 {
-  "challenge_module": "Spec",
-  "solution_module": "Proofs",
+  "challenge_module": "Bech32.Spec",
+  "solution_module": "Bech32.Proofs",
   "theorem_names": [
-    "Spec.decode_iff", "Spec.encode_isSome", "Spec.decode_encode", "Spec.encode_decode",
-    "Spec.encode_lower", "Spec.one_substitution", "Spec.separator_substitution", "Spec.insert_q_bech32", "Spec.insert_q_bech32m",
-    "Spec.bip173_valid", "Spec.bip173_invalid", "Spec.bip350_valid", "Spec.bip350_invalid",
-    "Spec.segwit_strings", "Spec.encode_vectors"
+    "Bech32.Spec.decode_iff", "Bech32.Spec.encode_isSome", "Bech32.Spec.decode_encode", "Bech32.Spec.encode_decode",
+    "Bech32.Spec.encode_lower", "Bech32.Spec.one_substitution", "Bech32.Spec.separator_substitution", "Bech32.Spec.insert_q_bech32", "Bech32.Spec.insert_q_bech32m",
+    "Bech32.Spec.bip173_valid", "Bech32.Spec.bip173_invalid", "Bech32.Spec.bip350_valid", "Bech32.Spec.bip350_invalid",
+    "Bech32.Spec.segwit_strings", "Bech32.Spec.encode_vectors"
   ],
   "permitted_axioms": ["propext", "Quot.sound", "Classical.choice"]
 }

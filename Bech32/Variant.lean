@@ -1,7 +1,7 @@
 /-
   The two variants of the checksum. This file is part of the
-  specification: `bar.toml` lists it with `Spec.lean` and
-  `Spec/Defs.lean`, and a reviewer approves it with them. The
+  specification: `bar.toml` lists it with `Bech32/Spec.lean` and
+  `Bech32/Spec/Defs.lean`, and a reviewer approves it with them. The
   statements use the type, and the code returns it.
 -/
 

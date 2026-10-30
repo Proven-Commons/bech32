@@ -16,7 +16,7 @@ entry_points = ["Main.lean"]
 [spec]
 # Bech32/Variant.lean holds only the type of the two variants, which the
 # statements use and the code returns.
-files = ["SPEC.md", "Spec.lean", "Spec/Defs.lean", "Bech32/Variant.lean"]
+files = ["SPEC.md", "Bech32/Spec.lean", "Bech32/Spec/Defs.lean", "Bech32/Variant.lean"]
 # The code under proof: the functions the statements are about.
 code = ["Bech32.encode", "Bech32.decode"]
 
